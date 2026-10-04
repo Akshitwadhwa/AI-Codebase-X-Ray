@@ -35,6 +35,35 @@ def _node_name(node, source: bytes) -> str | None:
     return name.text.decode("utf-8", errors="replace") if name else None
 
 
+def _snippet(source: bytes, start_line: int, end_line: int, limit: int = 30) -> str:
+    lines = source.decode("utf-8", errors="replace").splitlines()
+    start = max(0, start_line - 1)
+    end = min(len(lines), max(start_line, end_line), start + limit)
+    return "\n".join(lines[start:end])
+
+
+def assign_symbol_ids(symbols: list[Symbol]) -> None:
+    """Deterministic ids so a later graph can tell two same-named symbols apart."""
+    bases: list[str] = []
+    counts: dict[str, int] = {}
+    for symbol in symbols:
+        if symbol.kind == "method" and symbol.parent:
+            base = f"sym:{symbol.file_path}::{symbol.parent}.{symbol.name}"
+        else:
+            base = f"sym:{symbol.file_path}::{symbol.name}"
+        bases.append(base)
+        counts[base] = counts.get(base, 0) + 1
+    used: dict[str, int] = {}
+    for symbol, base in zip(symbols, bases):
+        candidate = f"{base}:{symbol.start_line}" if counts[base] > 1 else base
+        if candidate in used:
+            used[candidate] += 1
+            candidate = f"{candidate}:{used[candidate]}"
+        else:
+            used[candidate] = 0
+        symbol.symbol_id = candidate
+
+
 def _tree_sitter_file(path: Path, relative: str, language: str) -> tuple[list[Symbol], list[ImportRecord]]:
     """Extract symbols/imports from the syntax tree, with no LLM involved."""
     source = path.read_bytes()
@@ -49,18 +78,24 @@ def _tree_sitter_file(path: Path, relative: str, language: str) -> tuple[list[Sy
         current_class = parent_class
         if kind in {"class_definition", "class_declaration"}:
             name = _node_name(node, source) or "<anonymous>"
-            symbols.append(Symbol(name=name, kind="class", file_path=relative, start_line=node.start_point.row + 1, end_line=node.end_point.row + 1))
+            start_line = node.start_point.row + 1
+            end_line = node.end_point.row + 1
+            symbols.append(Symbol(name=name, kind="class", file_path=relative, start_line=start_line, end_line=end_line, snippet=_snippet(source, start_line, end_line)))
             class_nodes.append((node, name))
             current_class = name
         elif kind in function_types:
             name = _node_name(node, source)
             if name:
-                symbols.append(Symbol(name=name, kind="method" if parent_class else "function", file_path=relative, start_line=node.start_point.row + 1, end_line=node.end_point.row + 1, parent=parent_class))
+                start_line = node.start_point.row + 1
+                end_line = node.end_point.row + 1
+                symbols.append(Symbol(name=name, kind="method" if parent_class else "function", file_path=relative, start_line=start_line, end_line=end_line, parent=parent_class, snippet=_snippet(source, start_line, end_line)))
         elif kind == "variable_declarator" and node.child_by_field_name("value") and node.child_by_field_name("value").type == "arrow_function":
             name = _node_name(node, source)
             if name:
                 value = node.child_by_field_name("value")
-                symbols.append(Symbol(name=name, kind="function", file_path=relative, start_line=value.start_point.row + 1, end_line=value.end_point.row + 1))
+                start_line = value.start_point.row + 1
+                end_line = value.end_point.row + 1
+                symbols.append(Symbol(name=name, kind="method" if parent_class else "function", file_path=relative, start_line=start_line, end_line=end_line, parent=parent_class, snippet=_snippet(source, start_line, end_line)))
         elif kind in {"import_statement", "import_declaration"} and language != "Python":
             text = node.text.decode("utf-8", errors="replace")
             match = re.search(r"(?:from\s+|require\s*\(\s*|import\s*)['\"]([^'\"]+)", text)
@@ -97,17 +132,19 @@ def _tree_relationships(path: Path, relative: str, language: str) -> list[Relati
     relationships: list[Relationship] = []
     function_types = {"function_definition", "function_declaration", "generator_function_declaration", "method_definition"}
 
-    def visit(node, current_scope: str = relative) -> None:
+    def visit(node, current_scope: str = relative, current_class: str | None = None) -> None:
         scope = current_scope
+        class_name = current_class
         if node.type in {"class_definition", "class_declaration"}:
-            class_name = _node_name(node, source)
-            if class_name:
-                scope = f"{relative}::{class_name}"
+            found = _node_name(node, source)
+            if found:
+                class_name = found
+                scope = f"{relative}::{found}"
             if language == "Python":
                 bases = node.child_by_field_name("superclasses") or next((child for child in node.named_children if child.type == "argument_list"), None)
                 if bases:
                     for base in bases.named_children:
-                        relationships.append(Relationship(source=scope, target=base.text.decode("utf-8", errors="replace"), kind="INHERITS"))
+                        relationships.append(Relationship(source=scope, target=base.text.decode("utf-8", errors="replace"), kind="INHERITS", line=base.start_point.row + 1))
             else:
                 heritage = next((child for child in node.named_children if child.type == "class_heritage"), None)
                 if heritage:
@@ -117,23 +154,23 @@ def _tree_relationships(path: Path, relative: str, language: str) -> list[Relati
                         else:
                             bases = [base] if base.type not in {"extends", "implements"} else []
                         for parent in bases:
-                            relationships.append(Relationship(source=scope, target=parent.text.decode("utf-8", errors="replace"), kind="INHERITS"))
+                            relationships.append(Relationship(source=scope, target=parent.text.decode("utf-8", errors="replace"), kind="INHERITS", line=parent.start_point.row + 1))
         elif node.type in function_types:
             name = _node_name(node, source)
             if name:
-                scope = f"{relative}::{name}"
+                scope = f"{relative}::{class_name}.{name}" if class_name else f"{relative}::{name}"
         elif node.type == "variable_declarator" and node.child_by_field_name("value") and node.child_by_field_name("value").type == "arrow_function":
             name = _node_name(node, source)
             if name:
-                scope = f"{relative}::{name}"
+                scope = f"{relative}::{class_name}.{name}" if class_name else f"{relative}::{name}"
         elif node.type in {"call", "call_expression"}:
             callee = node.child_by_field_name("function")
             if callee is None and node.named_children:
                 callee = node.named_children[0]
             if callee:
-                relationships.append(Relationship(source=scope, target=callee.text.decode("utf-8", errors="replace"), kind="CALLS"))
+                relationships.append(Relationship(source=scope, target=callee.text.decode("utf-8", errors="replace"), kind="CALLS", line=node.start_point.row + 1))
         for child in node.named_children:
-            visit(child, scope)
+            visit(child, scope, class_name)
 
     visit(tree.root_node)
     return relationships
@@ -185,7 +222,7 @@ def _javascript_file(path: Path, relative: str) -> tuple[list[Symbol], list[Impo
     return symbols, imports
 
 
-def _is_test(path: str) -> bool:
+def is_test_path(path: str) -> bool:
     name = Path(path).name.lower()
     return name.startswith("test_") or name.endswith("_test.py") or ".test." in name or ".spec." in name or "/tests/" in f"/{path.lower()}/"
 
@@ -258,8 +295,9 @@ def analyze_source(root: Path, repository: str, default_branch: str) -> Analysis
     for item in imports:
         item.resolved_file = _resolve_import(item, known_files)
         relationships.append(Relationship(source=item.file_path, target=item.resolved_file or item.imported_name, kind="IMPORTS"))
-    tests = sum(1 for file in files if _is_test(file))
+    tests = sum(1 for file in files if is_test_path(file))
     source_files = scanned_source_files
     primary_language = languages.most_common(1)[0][0] if languages else None
     summary = AnalysisSummary(files=len(files), folders=len(folders), source_files=source_files, languages=dict(languages), primary_language=primary_language, classes=sum(1 for item in symbols if item.kind == "class"), functions=sum(1 for item in symbols if item.kind in {"function", "method"}), imports=len(imports), tests=tests)
+    assign_symbol_ids(symbols)
     return AnalysisResult(repository=repository, default_branch=default_branch, summary=summary, files=files, symbols=symbols, imports=imports, relationships=relationships, warnings=warnings)

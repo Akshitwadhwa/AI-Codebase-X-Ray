@@ -23,7 +23,9 @@ cd /Users/Lenovo/Desktop/sem-7/idt/Project_Phase-1
 ./run_demo.sh
 ```
 
-The demo currently supports Python, JavaScript, and TypeScript. It detects files, folders, the primary language, classes, functions/methods, imports, tests, and `CONTAINS`, `IMPORTS`, `CALLS`, and `INHERITS` relationships using Tree-sitter. Each completed result is also saved as structured JSON under `data/analyses/` (ignored by Git); graph storage, RAG, tests, CI, and PR analysis are planned for later phases.
+The demo currently supports Python, JavaScript, and TypeScript. It detects files, folders, the primary language, classes, functions/methods, imports, tests, and `CONTAINS`, `IMPORTS`, `CALLS`, and `INHERITS` relationships using Tree-sitter. Each completed result is saved as structured JSON under `data/analyses/` (ignored by Git).
+
+After an analysis finishes, the page searches for `process_payment` when that symbol exists. You can also paste a saved 12-character analysis id and choose **Open saved analysis**. Selecting a symbol loads callers, the containing class, imports, related tests, risk flags, and the files to review. The map is that symbol's neighborhood. RAG, CI workers, and pull-request analysis remain later phases.
 
 ## Configuration
 

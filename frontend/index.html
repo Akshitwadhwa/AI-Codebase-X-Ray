@@ -5,16 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Codebase X-Ray</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reactflow@11.11.4/dist/style.css" />
   </head>
   <body>
     <main class="shell">
       <header class="hero">
-        <div class="eyebrow"><span class="pulse"></span> PHASE 1 · REPOSITORY INTELLIGENCE</div>
+        <div class="eyebrow"><span class="pulse"></span> PHASE 2 · IMPACT REVIEW</div>
         <h1>See inside any codebase.</h1>
-        <p>Paste a public GitHub repository. X-Ray downloads it temporarily on the server, maps its structure, and returns evidence-backed results to your browser.</p>
+        <p>Paste a public GitHub repository, or open a saved analysis. X-Ray maps the structure, then shows the file, class, callers, imports, tests, and files to review for a symbol you select.</p>
         <form id="analyze-form" class="searchbar">
           <input id="repository-url" type="url" required placeholder="https://github.com/owner/repository" value="https://github.com/psf/requests" />
           <button id="analyze-button" type="submit">Analyze repository <span>→</span></button>
+        </form>
+        <form id="open-form" class="searchbar open-form">
+          <input id="open-id" placeholder="Saved analysis id" maxlength="12" spellcheck="false" />
+          <button class="ghost" type="submit">Open saved analysis</button>
         </form>
         <p id="status" class="status" role="status">Ready for a repository URL.</p>
       </header>
@@ -29,7 +34,35 @@
         <article class="panel relationships"><div class="panel-title"><h3>Relationships detected</h3><span id="relationship-count"></span></div><div id="relationship-list" class="relationship-list"></div></article>
         <p id="warnings" class="warnings"></p>
       </section>
+
+      <section id="impact" class="impact hidden">
+        <div class="result-heading">
+          <div>
+            <div class="eyebrow">SYMBOL REVIEW</div>
+            <h2>What would a change touch?</h2>
+            <p class="saved-id">Search a function or method. The map is the neighborhood of that symbol, not the whole repository.</p>
+          </div>
+        </div>
+        <form id="symbol-form" class="searchbar">
+          <input id="symbol-query" placeholder="process_payment" spellcheck="false" />
+          <button type="submit">Find symbol</button>
+        </form>
+        <label class="depth"><input id="depth-2" type="checkbox" /> Include callers of callers</label>
+        <div id="symbol-hits" class="symbol-list hits"></div>
+        <div id="impact-body" class="hidden">
+          <div class="grid">
+            <article class="panel" id="impact-summary"></article>
+            <article class="panel" id="impact-side"></article>
+          </div>
+          <article class="panel relationships">
+            <div class="panel-title"><h3>Neighborhood</h3><span id="graph-note"></span><button type="button" class="ghost" id="architecture-button">Import map</button></div>
+            <div id="flow" class="flow"></div>
+          </article>
+          <article class="panel relationships hidden" id="file-view"></article>
+        </div>
+      </section>
     </main>
+    <script type="module" src="/graph.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

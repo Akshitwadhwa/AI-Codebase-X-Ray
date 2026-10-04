@@ -35,9 +35,9 @@ Phase 1 is the first working vertical slice. The user enters a public GitHub rep
 
 The backend returns a repository summary and an `analysis_id`. The structured result provides the evidence needed by later phases, including files, symbols, source locations, language counts, tests, and relationship records.
 
-## Phase 2: next implementation built on Phase 1
+## Phase 2: graph and impact review
 
-Phase 2 will not repeat repository ingestion or parsing. It will consume the Phase 1 JSON and turn the extracted relationships into a persistent, queryable knowledge graph.
+Phase 2 does not repeat repository ingestion or parsing. It reads a saved Phase 1 analysis and turns symbols, imports, and relationships into a queryable review graph.
 
 ```text
 Phase 1 JSON → graph builder → graph API → browser map and impact analysis
@@ -45,17 +45,18 @@ Phase 1 JSON → graph builder → graph API → browser map and impact analysis
 
 ### Phase 2 deliverables
 
-1. Persist every completed analysis using its `analysis_id`.
-2. Create graph nodes for repositories, folders, files, classes, functions, methods, imports, and tests.
-3. Create graph edges for `CONTAINS`, `IMPORTS`, `CALLS`, and `INHERITS`.
-4. Start with NetworkX for the local demonstration; keep a storage interface so Neo4j can be introduced for larger repositories.
-5. Add backend endpoints such as:
-   - `GET /analyses/{analysis_id}/graph`
-   - `GET /analyses/{analysis_id}/impact/{symbol_id}`
-   - `GET /analyses/{analysis_id}/files/{path}`
-6. Add an interactive React Flow architecture/dependency map.
-7. Add a symbol-selection view that shows callers, dependencies, parent classes, and related tests.
-8. Return an evidence-backed impact report with affected files and a risk explanation.
+1. Persist every completed analysis using its `analysis_id`, and reload it with `GET /api/analyses` and `GET /api/analyses/{analysis_id}`.
+2. Create graph nodes for repositories, folders, files, classes, functions, and methods. Imports and tests stay edges and flags, not extra node types.
+3. Create graph edges for `CONTAINS`, `IMPORTS`, `CALLS`, and `INHERITS`. Call and base edges are resolved to symbol ids with a confidence, or kept as unresolved evidence.
+4. NetworkX is the only graph store. `{analysis_id}.json` is the source of truth and `{analysis_id}.graph.json` is a cache.
+5. Backend endpoints:
+   - `GET /api/analyses/{analysis_id}/graph?view=architecture|neighborhood`
+   - `GET /api/analyses/{analysis_id}/impact/{symbol_id}`
+   - `GET /api/analyses/{analysis_id}/file?path=`
+   - `GET /api/analyses/{analysis_id}/symbols?q=`
+6. A React Flow neighborhood map on the existing static page.
+7. A symbol-selection view that shows the containing file and class, callers, callees, imports, tests, and parent classes.
+8. An evidence-backed impact report: review files with reasons, snippets, and deterministic risk flags.
 
 ### Phase 2 demonstration
 
