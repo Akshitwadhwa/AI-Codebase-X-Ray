@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Codebase X-Ray</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="eyebrow"><span class="pulse"></span> PHASE 1 · REPOSITORY INTELLIGENCE</div>
+        <h1>See inside any codebase.</h1>
+        <p>Paste a public GitHub repository. X-Ray downloads it temporarily on the server, maps its structure, and returns evidence-backed results to your browser.</p>
+        <form id="analyze-form" class="searchbar">
+          <input id="repository-url" type="url" required placeholder="https://github.com/owner/repository" value="https://github.com/psf/requests" />
+          <button id="analyze-button" type="submit">Analyze repository <span>→</span></button>
+        </form>
+        <p id="status" class="status" role="status">Ready for a repository URL.</p>
+      </header>
+
+      <section id="results" class="results hidden">
+        <div class="result-heading"><div><div class="eyebrow">ANALYSIS COMPLETE</div><h2 id="repo-name"></h2><p id="analysis-id" class="saved-id"></p></div><div class="heading-badges"><span id="primary-language" class="badge"></span><span id="branch" class="badge"></span></div></div>
+        <div id="metrics" class="metrics"></div>
+        <div class="grid">
+          <article class="panel"><div class="panel-title"><h3>Repository explorer</h3><span id="file-count"></span></div><div id="files" class="file-list"></div></article>
+          <article class="panel"><div class="panel-title"><h3>Detected symbols</h3><span id="symbol-count"></span></div><div id="symbols" class="symbol-list"></div></article>
+        </div>
+        <article class="panel relationships"><div class="panel-title"><h3>Relationships detected</h3><span id="relationship-count"></span></div><div id="relationship-list" class="relationship-list"></div></article>
+        <p id="warnings" class="warnings"></p>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
