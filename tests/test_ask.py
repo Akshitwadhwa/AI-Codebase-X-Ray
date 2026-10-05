@@ -80,3 +80,8 @@ def test_ask_endpoint_compares_two_offline_answers(tmp_path: Path, monkeypatch) 
     body = response.json()
     assert body["answers"][0]["refused"] is False
     assert ".gitignore" in body["answers"][0]["citations"][0]["path"]
+    compared = client.post("/api/analyses/abc123abc123/ask", json={"question": "What does gitignore hide?", "provider": "offline", "compare_with": "without-rag"})
+    assert compared.status_code == 200
+    pair = compared.json()["answers"]
+    assert pair[0]["mode"] == "grounded" and pair[0]["refused"] is False
+    assert pair[1]["mode"] == "baseline" and pair[1]["refused"] is True

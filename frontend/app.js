@@ -86,7 +86,7 @@ async function loadProviders() {
   const compare = document.querySelector('#ask-compare');
   const configured = providers.filter((item) => item.configured);
   primary.innerHTML = configured.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('');
-  compare.innerHTML = `<option value="">No comparison</option>` + configured.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('');
+  compare.innerHTML = `<option value="">No comparison</option><option value="without-rag">Without RAG</option>` + configured.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('');
 }
 
 document.querySelector('#ask-form').addEventListener('submit', async (event) => {
@@ -117,7 +117,8 @@ function renderAnswer(answer) {
   const citations = answer.citations.length
     ? answer.citations.map((item) => `<div class="evidence">${escapeHtml(item.path)}${item.line ? `:${item.line}` : ''}</div>`).join('')
     : '<p class="reason">No file citation.</p>';
-  return `<article class="panel answer"><div class="panel-title"><h3>${escapeHtml(answer.provider)}</h3><span>${escapeHtml(answer.mode)}${answer.refused ? ' · not in this scan' : ''}</span></div><p>${escapeHtml(answer.answer)}</p><div class="stack"><h4>Citations</h4>${citations}</div></article>`;
+  const mode = answer.mode === 'baseline' ? 'without RAG' : 'with RAG';
+  return `<article class="panel answer"><div class="panel-title"><h3>${escapeHtml(answer.provider)}</h3><span>${escapeHtml(mode)}${answer.refused ? ' · not in this scan' : ''}</span></div><p>${escapeHtml(answer.answer)}</p><div class="stack"><h4>Citations</h4>${citations}</div></article>`;
 }
 
 symbolForm.addEventListener('submit', (event) => {

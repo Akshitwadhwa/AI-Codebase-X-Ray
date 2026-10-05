@@ -132,15 +132,13 @@ def offline_answer(prompt: str, mode: str) -> ModelAnswer:
 
 
 def answer_question(result: AnalysisResult, question: str, provider: str, compare_with: str | None = None) -> AskResponse:
-    providers = [provider]
-    if compare_with:
+    answers = [complete(provider, pack_context(result, question, baseline=False), "grounded")]
+    if compare_with == "without-rag":
+        answers.append(answer_baseline(result, question, provider))
+    elif compare_with:
         if compare_with == provider:
             raise ProviderError("Choose a different provider to compare")
-        providers.append(compare_with)
-    answers: list[ModelAnswer] = []
-    for name in providers:
-        prompt = pack_context(result, question, baseline=False)
-        answers.append(complete(name, prompt, "grounded"))
+        answers.append(complete(compare_with, pack_context(result, question, baseline=False), "grounded"))
     return AskResponse(question=question, answers=answers)
 
 
