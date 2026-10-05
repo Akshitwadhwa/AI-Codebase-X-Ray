@@ -9,6 +9,16 @@ from backend.store import NetworkXGraphStore
 from eval.score import score_answer
 
 
+def test_backend_question_context_includes_language_and_framework(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("fastapi\nuvicorn\n", encoding="utf-8")
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend" / "main.py").write_text("from fastapi import FastAPI\napp = FastAPI()\n", encoding="utf-8")
+    result = analyze_source(tmp_path, "demo/app", "main")
+    packed = pack_context(result, "what is the repo backend made")
+    assert "Primary language: Python" in packed
+    assert "fastapi" in packed.lower()
+
+
 def test_scan_keeps_gitignore_and_requirements(tmp_path: Path) -> None:
     (tmp_path / ".gitignore").write_text(".env\n.venv\n", encoding="utf-8")
     (tmp_path / "requirements.txt").write_text("fastapi\nsqlalchemy\n", encoding="utf-8")

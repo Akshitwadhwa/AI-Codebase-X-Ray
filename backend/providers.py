@@ -10,7 +10,8 @@ from .models import Citation, ModelAnswer
 
 SYSTEM = (
     "You answer questions about one scanned software repository. "
-    "Use only the context. If the context does not contain the answer, set refused to true and say what is missing. "
+    "Use only the context, including the scan-summary line and dependency or framework import lines. "
+    "If the context does not contain the answer, set refused to true and say what is missing. "
     "Return one JSON object and no other text: "
     '{"answer": "...", "citations": [{"path": "file", "line": 1}], "refused": false}. '
     "Every citation path must appear in the context. line is 1-based or null."

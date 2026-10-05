@@ -14,9 +14,14 @@ TOPIC_TERMS = {
     "gitignore": ["gitignore", ".env", "node_modules", "pycache"],
     "ignore": ["gitignore", ".env", "node_modules"],
     "hidden": ["gitignore", ".env", "node_modules"],
-    "backend": ["fastapi", "flask", "django", "express", "backend", "uvicorn"],
+    "backend": ["fastapi", "flask", "django", "express", "backend", "uvicorn", "python", "javascript"],
     "server": ["fastapi", "express", "flask", "uvicorn"],
+    "made": ["fastapi", "flask", "django", "express", "uvicorn", "python", "javascript", "typescript", "framework"],
+    "built": ["fastapi", "flask", "django", "express", "uvicorn", "python", "javascript", "framework"],
+    "stack": ["fastapi", "flask", "django", "express", "uvicorn", "python", "javascript", "framework"],
+    "framework": ["fastapi", "flask", "django", "express", "uvicorn"],
 }
+FRAMEWORKS = ("fastapi", "flask", "django", "express", "uvicorn", "starlette", "nestjs")
 
 
 def question_terms(question: str) -> set[str]:
@@ -49,6 +54,24 @@ def _vector_lines(result: AnalysisResult, question: str) -> list[str]:
     return lines
 
 
+def _stack_lines(result: AnalysisResult) -> list[str]:
+    language = result.summary.primary_language or "unknown"
+    lines = [
+        f"[scan-summary:1] Primary language: {language}. Files: {result.summary.files}. Classes: {result.summary.classes}. Functions: {result.summary.functions}. Branch: {result.default_branch}."
+    ]
+    for document in result.documents:
+        name = document.path.lower()
+        if not (name.endswith(("requirements.txt", "package.json", "pyproject.toml")) or "requirement" in name):
+            continue
+        for number, line in enumerate(document.text.splitlines()[:20], 1):
+            if line.strip():
+                lines.append(f"[{document.path}:{number}] {line.strip()}")
+    for item in result.imports:
+        if any(name in item.imported_name.lower() for name in FRAMEWORKS):
+            lines.append(f"[{item.file_path}:{item.line}] import {item.imported_name}")
+    return lines
+
+
 def pack_context(result: AnalysisResult, question: str, baseline: bool = False) -> str:
     if baseline:
         return f"Repository: {result.repository}\nNo source files, documents, or symbols were provided.\nQuestion: {question}"
@@ -60,11 +83,14 @@ def pack_context(result: AnalysisResult, question: str, baseline: bool = False) 
         f"Files: {result.summary.files}. Source files: {result.summary.source_files}.",
         "Question: " + question,
         "",
-        "Context lines are prefixed with [path:line].",
+        "Context lines are prefixed with [path:line]. The scan-summary line and dependency imports are evidence for what the backend is built with.",
     ]
-    retrieved = _vector_lines(result, question)
-    if retrieved:
-        lines.extend(retrieved[:40])
+    seen: set[str] = set()
+    for line in [*_stack_lines(result), *_vector_lines(result, question)]:
+        if line not in seen:
+            seen.add(line)
+            lines.append(line)
+    if len(lines) > 8:
         return "\n".join(lines)[:12000]
     for document in result.documents:
         hits = _line_hits(document.text, terms) or [(number, line.strip()) for number, line in enumerate(document.text.splitlines()[:8], 1) if line.strip()]

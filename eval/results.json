@@ -26,10 +26,10 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "app/db.py",
-        "app/db.py",
-        "app/db.py",
         "requirements.txt",
+        "app/db.py",
+        "app/db.py",
+        "app/db.py",
         "app/db.py"
       ],
       "citation_hit": true,
@@ -56,10 +56,11 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "README.md",
-        "backend/main.py",
+        "scan-summary",
         "requirements.txt",
-        "requirements.txt"
+        "requirements.txt",
+        "backend/main.py",
+        "README.md"
       ],
       "citation_hit": true,
       "abstention_correct": true,
@@ -85,6 +86,7 @@
       "answerable": true,
       "refused": false,
       "citations": [
+        "scan-summary",
         ".gitignore",
         ".gitignore",
         ".gitignore"
@@ -113,10 +115,11 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "README.md",
-        "backend/main.py",
+        "scan-summary",
         "requirements.txt",
-        "requirements.txt"
+        "requirements.txt",
+        "backend/main.py",
+        "README.md"
       ],
       "citation_hit": true,
       "abstention_correct": true,
@@ -142,9 +145,9 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "app/db.py",
-        "backend/main.py",
         "requirements.txt",
+        "backend/main.py",
+        "app/db.py",
         "README.md",
         "app/db.py",
         "app/db.py"
@@ -199,9 +202,9 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "src/index.js",
         "package.json",
-        "package.json"
+        "package.json",
+        "src/index.js"
       ],
       "citation_hit": true,
       "abstention_correct": true,
@@ -254,6 +257,8 @@
       "answerable": true,
       "refused": false,
       "citations": [
+        "scan-summary",
+        "package.json",
         "src/index.js"
       ],
       "citation_hit": true,
@@ -280,6 +285,11 @@
       "answerable": true,
       "refused": false,
       "citations": [
+        "package.json",
+        "package.json",
+        "package.json",
+        "package.json",
+        "package.json",
         "package.json"
       ],
       "citation_hit": true,
@@ -306,6 +316,7 @@
       "answerable": true,
       "refused": false,
       "citations": [
+        "scan-summary",
         "README.md",
         "README.md"
       ],
