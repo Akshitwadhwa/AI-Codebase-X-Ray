@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Codebase X-Ray</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=4" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reactflow@11.11.4/dist/style.css" />
   </head>
   <body>
@@ -26,8 +26,7 @@
 
       <section id="results" class="results hidden">
         <div class="result-heading"><div><div class="eyebrow">ANALYSIS COMPLETE</div><h2 id="repo-name"></h2><p id="analysis-id" class="saved-id"></p></div><div class="heading-badges"><span id="primary-language" class="badge"></span><span id="branch" class="badge"></span></div></div>
-        <div id="metrics" class="metrics"></div>
-        <section id="ask" class="ask-block hidden">
+        <section id="ask" class="ask-block">
           <div class="result-heading">
             <div>
               <div class="eyebrow">GROUNDED QUESTIONS</div>
@@ -45,6 +44,7 @@
           </form>
           <div id="ask-answers"></div>
         </section>
+        <div id="metrics" class="metrics"></div>
         <div class="grid">
           <article class="panel"><div class="panel-title"><h3>Repository explorer</h3><span id="file-count"></span></div><div id="files" class="file-list"></div></article>
           <article class="panel"><div class="panel-title"><h3>Detected symbols</h3><span id="symbol-count"></span></div><div id="symbols" class="symbol-list"></div></article>
@@ -81,6 +81,6 @@
       </section>
     </main>
     <script type="module" src="/graph.js"></script>
-    <script src="/app.js"></script>
+    <script src="/app.js?v=4"></script>
   </body>
 </html>
