@@ -183,7 +183,8 @@ async function loadImpact(symbolId) {
   const report = await response.json();
   if (!response.ok) throw new Error(report.detail || 'Impact failed');
   const symbol = report.symbol;
-  document.querySelector('#impact-summary').innerHTML = `<div class="panel-title"><h3>${escapeHtml(symbol.parent ? `${symbol.parent}.` : '')}${escapeHtml(symbol.name)}</h3><span>${escapeHtml(symbol.kind)}</span></div><p class="impact-meta">${escapeHtml(symbol.file_path)}:${symbol.start_line}-${symbol.end_line}</p><pre class="snippet">${escapeHtml(symbol.snippet || 'No snippet stored for this symbol.')}</pre><div class="stack"><h4>Callers</h4>${evidenceList(report.callers, 'No resolved callers.')}<h4>Callees</h4>${evidenceList(report.callees, 'No resolved callees.')}<h4>Bases</h4>${evidenceList(report.bases, 'No resolved base class.')}</div>`;
+  document.querySelector('#impact-summary').innerHTML = `<div class="panel-title"><h3>${escapeHtml(symbol.parent ? `${symbol.parent}.` : '')}${escapeHtml(symbol.name)}</h3><span>${escapeHtml(symbol.kind)}</span></div><p class="impact-meta">${escapeHtml(symbol.file_path)}:${symbol.start_line}-${symbol.end_line}</p><div id="symbol-rag"><p class="reason">Reading this function with RAG…</p></div><pre class="snippet">${escapeHtml(symbol.snippet || 'No snippet stored for this symbol.')}</pre><div class="stack"><h4>Callers</h4>${evidenceList(report.callers, 'No resolved callers.')}<h4>Callees</h4>${evidenceList(report.callees, 'No resolved callees.')}<h4>Bases</h4>${evidenceList(report.bases, 'No resolved base class.')}</div>`;
+  explainSymbol(symbolId);
   const flags = report.risk.length ? report.risk.map((flag) => `<div class="flag"><code>${escapeHtml(flag.code)}</code> ${escapeHtml(flag.message)}</div>`).join('') : '<p class="reason">No risk flags for this symbol.</p>';
   const reviews = report.review_files.map((file) => `<button type="button" class="hit" data-path="${escapeHtml(file.path)}">${escapeHtml(file.path)}<div class="reason">${escapeHtml(file.reasons.join(' · '))}</div></button>`).join('');
   document.querySelector('#impact-side').innerHTML = `<div class="panel-title"><h3>Review</h3><span>${report.review_files.length} files</span></div><div class="stack"><h4>Risk</h4>${flags}<h4>Imports</h4>${evidenceList(report.imports, 'No resolved imports.')}<h4>Tests</h4>${evidenceList(report.tests, 'No test evidence.')}<h4>Files to review</h4>${reviews || '<p class="reason">None.</p>'}<h4>Unresolved</h4>${evidenceList(report.unresolved, 'No unbound project calls.')}</div>`;
@@ -196,6 +197,27 @@ async function loadImpact(symbolId) {
   const draw = () => window.XRayGraph.mountGraph(container, graph, selectSymbol);
   if (window.XRayGraph) draw();
   else document.addEventListener('xray-graph', draw, { once: true });
+}
+
+async function explainSymbol(symbolId) {
+  const panel = document.querySelector('#symbol-rag');
+  const provider = document.querySelector('#ask-provider').value || 'offline';
+  try {
+    const response = await fetch(`/api/analyses/${currentAnalysisId}/explain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol_id: symbolId, provider }),
+    });
+    const answer = await response.json();
+    if (!response.ok) throw new Error(answer.detail || 'RAG explanation failed');
+    if (selectedSymbolId !== symbolId) return;
+    const citations = answer.citations.length
+      ? answer.citations.map((item) => `<div class="evidence">${escapeHtml(item.path)}${item.line ? `:${item.line}` : ''}</div>`).join('')
+      : '<p class="reason">No file citation.</p>';
+    panel.innerHTML = `<div class="stack"><h4>RAG · ${escapeHtml(answer.provider)}</h4><p>${escapeHtml(answer.answer)}</p><h4>Citations</h4>${citations}</div>`;
+  } catch (error) {
+    if (selectedSymbolId === symbolId) panel.innerHTML = `<p class="reason">${escapeHtml(error.message)}</p>`;
+  }
 }
 
 async function loadFile(path) {

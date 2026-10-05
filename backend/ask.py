@@ -144,3 +144,48 @@ def answer_question(result: AnalysisResult, question: str, provider: str, compar
 
 def answer_baseline(result: AnalysisResult, question: str, provider: str) -> ModelAnswer:
     return complete(provider, pack_context(result, question, baseline=True), "baseline")
+
+
+def symbol_prompt(report) -> str:
+    symbol = report.symbol
+    lines = [
+        f"Repository: {report.symbol.file_path}",
+        "Question: What does this function do, and which files call it?",
+        "Use only the evidence below. Do not invent callers.",
+        f"[{symbol.file_path}:{symbol.start_line}] {symbol.kind} {symbol.parent + '.' if symbol.parent else ''}{symbol.name}",
+    ]
+    if symbol.snippet:
+        for offset, line in enumerate(symbol.snippet.splitlines()):
+            if line.strip():
+                lines.append(f"[{symbol.file_path}:{symbol.start_line + offset}] {line.strip()}")
+    direct = [item for item in report.callers if item.depth == 1]
+    if direct:
+        lines.append("Callers:")
+        for item in direct:
+            lines.append(f"[{item.file_path}:{item.line or 1}] {item.name} calls {symbol.name}")
+    else:
+        lines.append("Callers: none resolved")
+    return "\n".join(lines)
+
+
+def explain_symbol(report, provider: str) -> ModelAnswer:
+    symbol = report.symbol
+    if provider == "offline":
+        direct = [item for item in report.callers if item.depth == 1 and item.file_path]
+        if direct:
+            called = "; ".join(f"{item.name} in {item.file_path}" for item in direct)
+            caller_sentence = f"It is called from {called}."
+        else:
+            caller_sentence = "No resolved caller was found in the graph."
+        place = f"inside {symbol.parent}, " if symbol.parent else ""
+        snippet = f" The saved code is: {symbol.snippet.strip()}" if symbol.snippet else ""
+        citations = [Citation(path=symbol.file_path, line=symbol.start_line)] if symbol.file_path else []
+        citations.extend(Citation(path=item.file_path, line=item.line) for item in direct if item.file_path)
+        return ModelAnswer(
+            answer=f"{symbol.name} is a {symbol.kind} {place}in {symbol.file_path}.{snippet} {caller_sentence}",
+            citations=citations,
+            provider="offline",
+            refused=False,
+            mode="grounded",
+        )
+    return complete(provider, symbol_prompt(report), "grounded")

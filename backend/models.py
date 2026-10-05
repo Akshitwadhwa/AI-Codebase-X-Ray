@@ -73,6 +73,11 @@ class AskRequest(BaseModel):
     compare_with: str | None = None
 
 
+class ExplainRequest(BaseModel):
+    symbol_id: str = Field(..., min_length=1, max_length=500)
+    provider: str = "offline"
+
+
 class ModelAnswer(BaseModel):
     answer: str
     citations: list[Citation] = []

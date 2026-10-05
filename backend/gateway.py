@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from .analyzer import analyze_source
 from .github import RepositoryError, download_repository, parse_repository_url
+from .ask import explain_symbol
 from .graph import architecture_view, build_graph, file_view, impact_report, neighborhood_view, search_symbols
 from .models import (
     AnalysisIndexEntry,
@@ -15,10 +16,12 @@ from .models import (
     AnalyzeRequest,
     AskRequest,
     AskResponse,
+    ExplainRequest,
     FileView,
     GraphView,
     ImpactReport,
     KnowledgeView,
+    ModelAnswer,
     RetrievalRequest,
     RetrievalResponse,
     SymbolView,
@@ -138,6 +141,18 @@ def get_graph(analysis_id: str, view: str = Query("architecture"), symbol_id: st
     if view != "architecture":
         raise HTTPException(status_code=400, detail="view must be architecture or neighborhood")
     return architecture_view(document)
+
+
+@router.post("/api/analyses/{analysis_id}/explain", response_model=ModelAnswer)
+def explain_analysis_symbol(analysis_id: str, request: ExplainRequest) -> ModelAnswer:
+    document = _graph_or_404(analysis_id)
+    report = impact_report(document, request.symbol_id, depth=1)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Symbol was not found in this analysis")
+    try:
+        return explain_symbol(report, request.provider)
+    except ProviderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/api/analyses/{analysis_id}/impact/{symbol_id:path}", response_model=ImpactReport)

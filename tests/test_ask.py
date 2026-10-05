@@ -45,6 +45,30 @@ def test_offline_refuses_when_the_scan_has_no_database(tmp_path: Path) -> None:
     assert score_answer(answer.model_dump(), {"answerable": False, "paths": []})["abstention_correct"] is True
 
 
+def test_rag_explains_a_selected_function_and_its_caller(tmp_path: Path) -> None:
+    (tmp_path / "billing").mkdir()
+    (tmp_path / "billing" / "service.py").write_text(
+        "class BillingService:\n    def process_payment(self, amount):\n        return amount\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "billing" / "api.py").write_text(
+        "from billing.service import BillingService\n\ndef checkout(service):\n    return service.process_payment(10)\n",
+        encoding="utf-8",
+    )
+    result = analyze_source(tmp_path, "demo/billing", "main")
+    from backend.ask import explain_symbol
+    from backend.graph import build_graph, impact_report
+
+    focus = next(item for item in result.symbols if item.name == "process_payment")
+    report = impact_report(build_graph(result), focus.symbol_id, 1)
+    answer = explain_symbol(report, "offline")
+    assert "process_payment" in answer.answer
+    assert "billing/service.py" in answer.answer
+    assert "billing/api.py" in answer.answer
+    assert "checkout" in answer.answer
+    assert any(item.path == "billing/api.py" for item in answer.citations)
+
+
 def test_vector_retrieval_stores_embeddings_and_finds_sqlite(tmp_path: Path) -> None:
     (tmp_path / "requirements.txt").write_text("sqlalchemy\n", encoding="utf-8")
     (tmp_path / "app").mkdir()
