@@ -73,7 +73,9 @@ openForm.addEventListener('submit', async (event) => {
 function prepareImpact(analysisId) {
   currentAnalysisId = analysisId;
   impact.classList.remove('hidden');
-  document.querySelector('#ask').classList.remove('hidden');
+  const ask = document.querySelector('#ask');
+  ask.classList.remove('hidden');
+  ask.scrollIntoView({ behavior: 'smooth', block: 'start' });
   loadProviders();
   symbolQuery.value = 'process_payment';
   searchSymbols('process_payment', true);

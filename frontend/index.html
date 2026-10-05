@@ -27,31 +27,30 @@
       <section id="results" class="results hidden">
         <div class="result-heading"><div><div class="eyebrow">ANALYSIS COMPLETE</div><h2 id="repo-name"></h2><p id="analysis-id" class="saved-id"></p></div><div class="heading-badges"><span id="primary-language" class="badge"></span><span id="branch" class="badge"></span></div></div>
         <div id="metrics" class="metrics"></div>
+        <section id="ask" class="ask-block hidden">
+          <div class="result-heading">
+            <div>
+              <div class="eyebrow">GROUNDED QUESTIONS</div>
+              <h2>Ask about this repository.</h2>
+              <p class="saved-id">Answers use the saved scan and excerpts. A citation is a file from that scan. Compare sends the same question to a second model.</p>
+            </div>
+          </div>
+          <form id="ask-form" class="ask-form">
+            <textarea id="ask-question" rows="3" maxlength="500" placeholder="What database does this repository use?"></textarea>
+            <div class="searchbar">
+              <select id="ask-provider"></select>
+              <select id="ask-compare"></select>
+              <button type="submit">Ask</button>
+            </div>
+          </form>
+          <div id="ask-answers"></div>
+        </section>
         <div class="grid">
           <article class="panel"><div class="panel-title"><h3>Repository explorer</h3><span id="file-count"></span></div><div id="files" class="file-list"></div></article>
           <article class="panel"><div class="panel-title"><h3>Detected symbols</h3><span id="symbol-count"></span></div><div id="symbols" class="symbol-list"></div></article>
         </div>
         <article class="panel relationships"><div class="panel-title"><h3>Relationships detected</h3><span id="relationship-count"></span></div><div id="relationship-list" class="relationship-list"></div></article>
         <p id="warnings" class="warnings"></p>
-      </section>
-
-      <section id="ask" class="impact hidden">
-        <div class="result-heading">
-          <div>
-            <div class="eyebrow">GROUNDED QUESTIONS</div>
-            <h2>Ask about this repository.</h2>
-            <p class="saved-id">Answers use the saved scan and excerpts. A citation is a file from that scan. Compare sends the same question to a second model.</p>
-          </div>
-        </div>
-        <form id="ask-form" class="ask-form">
-          <textarea id="ask-question" rows="3" maxlength="500" placeholder="What database does this repository use?"></textarea>
-          <div class="searchbar">
-            <select id="ask-provider"></select>
-            <select id="ask-compare"></select>
-            <button type="submit">Ask</button>
-          </div>
-        </form>
-        <div id="ask-answers"></div>
       </section>
 
       <section id="impact" class="impact hidden">
