@@ -56,7 +56,6 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "scan-summary",
         "requirements.txt",
         "requirements.txt",
         "backend/main.py",
@@ -86,7 +85,6 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "scan-summary",
         ".gitignore",
         ".gitignore",
         ".gitignore"
@@ -115,7 +113,6 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "scan-summary",
         "requirements.txt",
         "requirements.txt",
         "backend/main.py",
@@ -257,7 +254,6 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "scan-summary",
         "package.json",
         "src/index.js"
       ],
@@ -316,7 +312,6 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "scan-summary",
         "README.md",
         "README.md"
       ],

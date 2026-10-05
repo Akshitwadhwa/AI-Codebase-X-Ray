@@ -11,6 +11,8 @@ from .models import Citation, ModelAnswer
 SYSTEM = (
     "You answer questions about one scanned software repository. "
     "Use only the context, including the scan-summary line and dependency or framework import lines. "
+    "If the question asks what the backend is made of and the scan-summary names a language or framework, "
+    "answer with those names, cite the matching lines, and set refused to false. "
     "If the context does not contain the answer, set refused to true and say what is missing. "
     "Return one JSON object and no other text: "
     '{"answer": "...", "citations": [{"path": "file", "line": 1}], "refused": false}. '

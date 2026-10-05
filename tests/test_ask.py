@@ -19,6 +19,33 @@ def test_backend_question_context_includes_language_and_framework(tmp_path: Path
     assert "fastapi" in packed.lower()
 
 
+def test_refusing_model_still_answers_backend_from_the_scan(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "requirements.txt").write_text("fastapi\nuvicorn\n", encoding="utf-8")
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend" / "main.py").write_text("from fastapi import FastAPI\napp = FastAPI()\n", encoding="utf-8")
+    result = analyze_source(tmp_path, "demo/app", "main")
+
+    def refuse(provider: str, prompt: str, mode: str):
+        from backend.models import ModelAnswer
+
+        return ModelAnswer(
+            answer="The context does not provide information about the backend of the repository.",
+            provider=provider,
+            refused=True,
+            mode=mode,
+        )
+
+    monkeypatch.setattr("backend.ask.complete", refuse)
+    answer = answer_question(result, "what is the repo backend made", "openai").answers[0]
+    assert answer.refused is False
+    assert answer.provider == "openai"
+    assert "Python" in answer.answer
+    assert "fastapi" in answer.answer.lower()
+    assert any(item.path == "requirements.txt" for item in answer.citations)
+    baseline = answer_baseline(result, "what is the repo backend made", "openai")
+    assert baseline.refused is True
+
+
 def test_scan_keeps_gitignore_and_requirements(tmp_path: Path) -> None:
     (tmp_path / ".gitignore").write_text(".env\n.venv\n", encoding="utf-8")
     (tmp_path / "requirements.txt").write_text("fastapi\nsqlalchemy\n", encoding="utf-8")
@@ -45,6 +72,13 @@ def test_offline_grounded_answer_cites_sqlite_and_baseline_refuses(tmp_path: Pat
     assert baseline.refused is True
     assert score_answer(grounded.model_dump(), {"answerable": True, "paths": ["app/db.py"]})["supported"] is True
     assert score_answer(baseline.model_dump(), {"answerable": True, "paths": ["app/db.py"]})["supported"] is False
+
+
+def test_notes_repo_still_refuses_a_backend_question(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("Meeting notes from October. No application code is in this folder.\n", encoding="utf-8")
+    result = analyze_source(tmp_path, "demo/notes", "main")
+    answer = answer_question(result, "How is the backend built?", "offline").answers[0]
+    assert answer.refused is True
 
 
 def test_offline_refuses_when_the_scan_has_no_database(tmp_path: Path) -> None:

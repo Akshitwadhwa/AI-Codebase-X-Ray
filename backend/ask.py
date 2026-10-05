@@ -54,22 +54,107 @@ def _vector_lines(result: AnalysisResult, question: str) -> list[str]:
     return lines
 
 
+def _is_dependency(path: str) -> bool:
+    name = path.lower()
+    return name.endswith(("requirements.txt", "package.json", "pyproject.toml")) or "requirement" in name
+
+
+def _framework_evidence(result: AnalysisResult) -> tuple[list, list[tuple[str, int, str]], list[str]]:
+    imports = []
+    dependencies: list[tuple[str, int, str]] = []
+    names: list[str] = []
+
+    def add(name: str) -> None:
+        if name not in names:
+            names.append(name)
+
+    for item in result.imports:
+        for name in FRAMEWORKS:
+            if name in item.imported_name.lower():
+                imports.append(item)
+                add(name)
+                break
+    for document in result.documents:
+        if not _is_dependency(document.path):
+            continue
+        for number, line in enumerate(document.text.splitlines()[:40], 1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            matched = [name for name in FRAMEWORKS if name in stripped.lower()]
+            if matched:
+                dependencies.append((document.path, number, stripped))
+            for name in matched:
+                add(name)
+    return imports, dependencies, names
+
+
 def _stack_lines(result: AnalysisResult) -> list[str]:
     language = result.summary.primary_language or "unknown"
+    imports, _matched, names = _framework_evidence(result)
+    framework = f" Frameworks: {', '.join(names)}." if names else ""
     lines = [
-        f"[scan-summary:1] Primary language: {language}. Files: {result.summary.files}. Classes: {result.summary.classes}. Functions: {result.summary.functions}. Branch: {result.default_branch}."
+        f"[scan-summary:1] Primary language: {language}. Files: {result.summary.files}. Classes: {result.summary.classes}. Functions: {result.summary.functions}. Branch: {result.default_branch}.{framework}"
     ]
     for document in result.documents:
-        name = document.path.lower()
-        if not (name.endswith(("requirements.txt", "package.json", "pyproject.toml")) or "requirement" in name):
+        if not _is_dependency(document.path):
             continue
         for number, line in enumerate(document.text.splitlines()[:20], 1):
             if line.strip():
                 lines.append(f"[{document.path}:{number}] {line.strip()}")
-    for item in result.imports:
-        if any(name in item.imported_name.lower() for name in FRAMEWORKS):
-            lines.append(f"[{item.file_path}:{item.line}] import {item.imported_name}")
+    for item in imports:
+        lines.append(f"[{item.file_path}:{item.line}] import {item.imported_name}")
     return lines
+
+
+def _asks_about_backend(question: str) -> bool:
+    return bool(question_terms(question) & {"backend", "server", "made", "built", "stack", "framework"})
+
+
+def stack_facts(result: AnalysisResult) -> ModelAnswer | None:
+    language = result.summary.primary_language
+    imports, dependencies, names = _framework_evidence(result)
+    if not language and not names and not dependencies:
+        return None
+    sentences: list[str] = []
+    citations: list[Citation] = []
+    seen: set[tuple[str, int | None]] = set()
+
+    def cite(path: str, line: int) -> None:
+        key = (path, line)
+        if key in seen:
+            return
+        seen.add(key)
+        citations.append(Citation(path=path, line=line))
+
+    if language:
+        sentences.append(f"The backend is {language}.")
+    if names:
+        sentences.append("Frameworks in the scan: " + ", ".join(names) + ".")
+    for path, line, text in dependencies[:8]:
+        cite(path, line)
+        sentences.append(f"{path}:{line} lists {text}.")
+    for item in imports:
+        cite(item.file_path, item.line)
+        sentences.append(f"{item.file_path}:{item.line} imports {item.imported_name}.")
+    if language and not citations:
+        extension = {"Python": ".py", "JavaScript": ".js", "TypeScript": ".ts"}.get(language)
+        source = next((path for path in result.files if extension and path.endswith(extension)), None)
+        if source:
+            cite(source, 1)
+    return ModelAnswer(answer=" ".join(sentences), citations=citations[:6], provider="offline", refused=False, mode="grounded")
+
+
+def _with_stack_facts(answer: ModelAnswer, result: AnalysisResult, question: str) -> ModelAnswer:
+    if answer.mode == "baseline" or not _asks_about_backend(question):
+        return answer
+    facts = stack_facts(result)
+    if facts is None:
+        return answer
+    tokens = [token for token in [result.summary.primary_language, *FRAMEWORKS] if token]
+    if not answer.refused and any(token.lower() in answer.answer.lower() for token in tokens):
+        return answer
+    return ModelAnswer(answer=facts.answer, citations=facts.citations, provider=answer.provider, refused=False, mode=answer.mode)
 
 
 def pack_context(result: AnalysisResult, question: str, baseline: bool = False) -> str:
@@ -142,6 +227,8 @@ def offline_answer(prompt: str, mode: str) -> ModelAnswer:
         if not match:
             continue
         path, line_no, text = match.group(1), int(match.group(2)), match.group(3).strip()
+        if path == "scan-summary":
+            continue
         if terms and not any(term in text.lower() or term in path.lower() for term in terms):
             continue
         key = (path, line_no)
@@ -158,13 +245,14 @@ def offline_answer(prompt: str, mode: str) -> ModelAnswer:
 
 
 def answer_question(result: AnalysisResult, question: str, provider: str, compare_with: str | None = None) -> AskResponse:
-    answers = [complete(provider, pack_context(result, question, baseline=False), "grounded")]
+    grounded = pack_context(result, question, baseline=False)
+    answers = [_with_stack_facts(complete(provider, grounded, "grounded"), result, question)]
     if compare_with == "without-rag":
         answers.append(answer_baseline(result, question, provider))
     elif compare_with:
         if compare_with == provider:
             raise ProviderError("Choose a different provider to compare")
-        answers.append(complete(compare_with, pack_context(result, question, baseline=False), "grounded"))
+        answers.append(_with_stack_facts(complete(compare_with, grounded, "grounded"), result, question))
     return AskResponse(question=question, answers=answers)
 
 
