@@ -38,6 +38,17 @@ def _line_hits(text: str, terms: set[str], limit: int = 12) -> list[tuple[int, s
     return hits
 
 
+def _vector_lines(result: AnalysisResult, question: str) -> list[str]:
+    from .services.orchestrator import Orchestrator
+
+    lines: list[str] = []
+    for chunk in Orchestrator().retrieve(result, question).chunks:
+        for offset, line in enumerate(chunk.text.splitlines()):
+            if line.strip():
+                lines.append(f"[{chunk.path}:{chunk.start_line + offset}] {line.strip()}")
+    return lines
+
+
 def pack_context(result: AnalysisResult, question: str, baseline: bool = False) -> str:
     if baseline:
         return f"Repository: {result.repository}\nNo source files, documents, or symbols were provided.\nQuestion: {question}"
@@ -51,6 +62,10 @@ def pack_context(result: AnalysisResult, question: str, baseline: bool = False) 
         "",
         "Context lines are prefixed with [path:line].",
     ]
+    retrieved = _vector_lines(result, question)
+    if retrieved:
+        lines.extend(retrieved[:40])
+        return "\n".join(lines)[:12000]
     for document in result.documents:
         hits = _line_hits(document.text, terms) or [(number, line.strip()) for number, line in enumerate(document.text.splitlines()[:8], 1) if line.strip()]
         if not hits:

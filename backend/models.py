@@ -86,6 +86,35 @@ class AskResponse(BaseModel):
     answers: list[ModelAnswer]
 
 
+class RetrievedChunk(BaseModel):
+    path: str
+    start_line: int
+    end_line: int
+    kind: str
+    text: str
+    score: float
+
+
+class RetrievalRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=500)
+    k: int = Field(8, ge=1, le=20)
+
+
+class RetrievalResponse(BaseModel):
+    question: str
+    embedding: str
+    chunks: list[RetrievedChunk]
+
+
+class KnowledgeView(BaseModel):
+    analysis_id: str
+    embedding: str
+    dimension: int
+    documents: int
+    chunks: int
+    paths: list[str]
+
+
 class GraphNode(BaseModel):
     id: str
     kind: str

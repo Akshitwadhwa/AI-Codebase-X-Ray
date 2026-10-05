@@ -26,9 +26,10 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "README.md",
-        "requirements.txt",
         "app/db.py",
+        "app/db.py",
+        "app/db.py",
+        "requirements.txt",
         "app/db.py"
       ],
       "citation_hit": true,
@@ -56,10 +57,9 @@
       "refused": false,
       "citations": [
         "README.md",
-        "requirements.txt",
-        "requirements.txt",
         "backend/main.py",
-        "backend/main.py"
+        "requirements.txt",
+        "requirements.txt"
       ],
       "citation_hit": true,
       "abstention_correct": true,
@@ -85,6 +85,7 @@
       "answerable": true,
       "refused": false,
       "citations": [
+        ".gitignore",
         ".gitignore",
         ".gitignore"
       ],
@@ -113,10 +114,9 @@
       "refused": false,
       "citations": [
         "README.md",
-        "requirements.txt",
-        "requirements.txt",
         "backend/main.py",
-        "backend/main.py"
+        "requirements.txt",
+        "requirements.txt"
       ],
       "citation_hit": true,
       "abstention_correct": true,
@@ -142,10 +142,11 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "README.md",
-        "requirements.txt",
         "app/db.py",
         "backend/main.py",
+        "requirements.txt",
+        "README.md",
+        "app/db.py",
         "app/db.py"
       ],
       "citation_hit": true,
@@ -172,7 +173,6 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "README.md",
         "package.json"
       ],
       "citation_hit": true,
@@ -199,10 +199,9 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "README.md",
+        "src/index.js",
         "package.json",
-        "package.json",
-        "src/index.js"
+        "package.json"
       ],
       "citation_hit": true,
       "abstention_correct": true,
@@ -255,7 +254,6 @@
       "answerable": true,
       "refused": false,
       "citations": [
-        "package.json",
         "src/index.js"
       ],
       "citation_hit": true,

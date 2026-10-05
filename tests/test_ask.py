@@ -45,6 +45,23 @@ def test_offline_refuses_when_the_scan_has_no_database(tmp_path: Path) -> None:
     assert score_answer(answer.model_dump(), {"answerable": False, "paths": []})["abstention_correct"] is True
 
 
+def test_vector_retrieval_stores_embeddings_and_finds_sqlite(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("sqlalchemy\n", encoding="utf-8")
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "db.py").write_text("import sqlite3\n", encoding="utf-8")
+    result = analyze_source(tmp_path, "demo/billing", "main")
+    result.analysis_id = "abc123abc123"
+    from backend.services.orchestrator import Orchestrator
+
+    service = Orchestrator(tmp_path)
+    view = service.index(result)
+    assert view.embedding == "local-hash-v1"
+    assert view.chunks > 0
+    assert (tmp_path / "abc123abc123.knowledge.json").is_file()
+    found = service.retrieve(result, "What database does this repository use?")
+    assert any(chunk.path == "app/db.py" and chunk.score > 0 for chunk in found.chunks)
+
+
 def test_ask_endpoint_compares_two_offline_answers(tmp_path: Path, monkeypatch) -> None:
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / ".gitignore").write_text(".env\n", encoding="utf-8")

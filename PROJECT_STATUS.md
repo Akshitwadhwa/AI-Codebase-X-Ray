@@ -68,6 +68,17 @@ The mentor demo should select a function such as `process_payment()` and show:
 - related tests;
 - a list of files that may need review after a change.
 
+## Services
+
+The HTTP API in `backend/gateway.py` is the only entry from the browser. One request then moves through:
+
+- `backend/services/knowledge.py` stores document, import, and symbol chunks, with their vectors, in `data/analyses/{id}.knowledge.json`.
+- `backend/services/embedding.py` builds a local vector for each chunk and for the question. The name is `local-hash-v1`. A cloud or Ollama embedder can replace that class later.
+- `backend/services/retrieval.py` ranks chunks by cosine similarity.
+- `backend/services/orchestrator.py` runs index, then retrieve, then the existing answer step. Cloud model calls stay in `backend/providers.py`.
+
+`GET /api/analyses/{id}/knowledge` reports the index. `POST /api/analyses/{id}/retrieve` returns the ranked chunks without calling a model.
+
 ## Grounded questions
 
 - The scan stores capped excerpts of README, `.gitignore`, dependency manifests, and compose files on the same analysis JSON.
