@@ -537,7 +537,7 @@ def file_view(document: GraphDocument, path: str) -> FileView | None:
     return FileView(path=path, is_test=file_node.is_test, symbols=symbols, imports=imports, imported_by=imported_by, tests=tests)
 
 
-def _view_node(node: GraphNode, role: str | None = None) -> ViewNode:
+def _view_node(node: GraphNode, role: str | None = None, depth: int | None = None) -> ViewNode:
     label = node.name
     if node.file_path and node.kind in {"class", "function", "method"}:
         label = f"{node.name}"
@@ -549,6 +549,7 @@ def _view_node(node: GraphNode, role: str | None = None) -> ViewNode:
         role=role,
         is_test=node.is_test,
         symbol_count=node.symbol_count,
+        depth=depth,
     )
 
 
@@ -564,13 +565,15 @@ def _view_edges(document: GraphDocument, ids: set[str]) -> list[ViewEdge]:
     return edges
 
 
-def neighborhood_view(document: GraphDocument, symbol_id: str) -> GraphView | None:
-    report = impact_report(document, symbol_id, depth=1)
+def neighborhood_view(document: GraphDocument, symbol_id: str, depth: int = 1) -> GraphView | None:
+    depth = 1 if depth < 2 else 2
+    report = impact_report(document, symbol_id, depth=depth)
     if report is None:
         return None
     nodes = _node_map(document)
     focus = nodes[symbol_id]
     selected: dict[str, str] = {symbol_id: "focus"}
+    depths: dict[str, int] = {}
     if focus.file_path:
         selected[f"file:{focus.file_path}"] = "file"
     for node in document.nodes:
@@ -584,6 +587,7 @@ def neighborhood_view(document: GraphDocument, symbol_id: str) -> GraphView | No
     for item in report.callers:
         if item.symbol_id:
             selected.setdefault(item.symbol_id, "caller")
+            depths[item.symbol_id] = item.depth
     for item in report.callees:
         if item.symbol_id:
             selected.setdefault(item.symbol_id, "callee")
@@ -596,7 +600,11 @@ def neighborhood_view(document: GraphDocument, symbol_id: str) -> GraphView | No
     for item in report.imports:
         if item.file_path and item.reason == "imports":
             selected.setdefault(f"file:{item.file_path}", "import")
-    view_nodes = [_view_node(nodes[node_id], role) for node_id, role in selected.items() if node_id in nodes]
+    view_nodes = [
+        _view_node(nodes[node_id], role, depths.get(node_id))
+        for node_id, role in selected.items()
+        if node_id in nodes
+    ]
     return GraphView(view="neighborhood", nodes=view_nodes, edges=_view_edges(document, set(selected)))
 
 

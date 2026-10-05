@@ -137,7 +137,7 @@ document.querySelector('#architecture-button').addEventListener('click', async (
   if (!response.ok) return;
   document.querySelector('#graph-note').textContent = graph.truncated ? `${graph.nodes.length} nodes · truncated` : `${graph.nodes.length} nodes`;
   const container = document.querySelector('#flow');
-  const draw = () => window.XRayGraph.mountGraph(container, graph, selectSymbol);
+  const draw = () => window.XRayGraph.mountGraph(container, graph, selectSymbol, loadFile);
   if (window.XRayGraph) draw();
   else document.addEventListener('xray-graph', draw, { once: true });
 });
@@ -190,11 +190,11 @@ async function loadImpact(symbolId) {
   document.querySelector('#impact-side').innerHTML = `<div class="panel-title"><h3>Review</h3><span>${report.review_files.length} files</span></div><div class="stack"><h4>Risk</h4>${flags}<h4>Imports</h4>${evidenceList(report.imports, 'No resolved imports.')}<h4>Tests</h4>${evidenceList(report.tests, 'No test evidence.')}<h4>Files to review</h4>${reviews || '<p class="reason">None.</p>'}<h4>Unresolved</h4>${evidenceList(report.unresolved, 'No unbound project calls.')}</div>`;
   document.querySelector('#impact-side').querySelectorAll('[data-path]').forEach((button) => button.addEventListener('click', () => loadFile(button.dataset.path)));
   impactBody.classList.remove('hidden');
-  const graphResponse = await fetch(`/api/analyses/${currentAnalysisId}/graph?view=neighborhood&symbol_id=${encodeURIComponent(symbolId)}`);
+  const graphResponse = await fetch(`/api/analyses/${currentAnalysisId}/graph?view=neighborhood&symbol_id=${encodeURIComponent(symbolId)}&depth=${depth}`);
   const graph = await graphResponse.json();
   document.querySelector('#graph-note').textContent = graphResponse.ok ? `${graph.nodes.length} nodes` : 'Map unavailable';
   const container = document.querySelector('#flow');
-  const draw = () => window.XRayGraph.mountGraph(container, graph, selectSymbol);
+  const draw = () => window.XRayGraph.mountGraph(container, graph, selectSymbol, loadFile);
   if (window.XRayGraph) draw();
   else document.addEventListener('xray-graph', draw, { once: true });
 }

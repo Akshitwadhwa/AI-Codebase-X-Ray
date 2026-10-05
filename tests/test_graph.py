@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from backend.analyzer import analyze_source
-from backend.graph import build_graph, impact_report, to_networkx
+from backend.graph import build_graph, impact_report, neighborhood_view, to_networkx
 from backend.main import app
 from backend.models import AnalysisResult, ImportRecord, Relationship, Symbol
 from backend.store import InvalidFilePath, NetworkXGraphStore, safe_relative_path
@@ -27,7 +27,9 @@ def _payment_tree(root: Path) -> None:
     (root / "billing" / "api.py").write_text(
         "from billing.service import BillingService\n\n"
         "def checkout(service):\n"
-        "    return service.process_payment(10)\n",
+        "    return service.process_payment(10)\n\n"
+        "def pay(service):\n"
+        "    return checkout(service)\n",
         encoding="utf-8",
     )
     (root / "tests" / "test_billing.py").write_text(
@@ -120,6 +122,23 @@ def test_high_fan_in_and_cross_folder_are_distinct_callers() -> None:
     assert any(item.code == "high_fan_in" for item in report.risk)
     assert any(item.code == "cross_folder" for item in report.risk)
     assert any(item.code == "no_test_evidence" for item in report.risk)
+
+
+def test_neighborhood_depth_adds_indirect_callers(tmp_path: Path) -> None:
+    _payment_tree(tmp_path)
+    result = analyze_source(tmp_path, "demo/billing", "main")
+    document = build_graph(result)
+    focus = _focus(result).symbol_id
+    pay = next(item for item in result.symbols if item.name == "pay")
+    near = neighborhood_view(document, focus, depth=1)
+    far = neighborhood_view(document, focus, depth=2)
+    assert near is not None and far is not None
+    assert pay.symbol_id not in {node.id for node in near.nodes}
+    indirect = next(node for node in far.nodes if node.id == pay.symbol_id)
+    assert indirect.role == "caller"
+    assert indirect.depth == 2
+    roles = {node.role for node in far.nodes}
+    assert {"focus", "caller", "callee", "class", "file"} <= roles
 
 
 def test_file_path_rejects_traversal() -> None:

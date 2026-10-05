@@ -129,12 +129,12 @@ def find_symbols(analysis_id: str, q: str = Query("", max_length=200)) -> list[S
 
 
 @router.get("/api/analyses/{analysis_id}/graph", response_model=GraphView)
-def get_graph(analysis_id: str, view: str = Query("architecture"), symbol_id: str | None = None) -> GraphView:
+def get_graph(analysis_id: str, view: str = Query("architecture"), symbol_id: str | None = None, depth: int = Query(1)) -> GraphView:
     document = _graph_or_404(analysis_id)
     if view == "neighborhood":
         if not symbol_id:
             raise HTTPException(status_code=400, detail="symbol_id is required for a neighborhood graph")
-        neighborhood = neighborhood_view(document, symbol_id)
+        neighborhood = neighborhood_view(document, symbol_id, depth)
         if neighborhood is None:
             raise HTTPException(status_code=404, detail="Symbol was not found in this analysis")
         return neighborhood

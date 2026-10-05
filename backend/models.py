@@ -217,6 +217,7 @@ class ViewNode(BaseModel):
     role: str | None = None
     is_test: bool = False
     symbol_count: int = 0
+    depth: int | None = None
 
 
 class ViewEdge(BaseModel):

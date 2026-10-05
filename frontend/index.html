@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Codebase X-Ray</title>
-    <link rel="stylesheet" href="/styles.css?v=4" />
+    <link rel="stylesheet" href="/styles.css?v=6" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reactflow@11.11.4/dist/style.css" />
   </head>
   <body>
@@ -58,7 +58,7 @@
           <div>
             <div class="eyebrow">SYMBOL REVIEW</div>
             <h2>What would a change touch?</h2>
-            <p class="saved-id">Search a function or method. The map is the neighborhood of that symbol, not the whole repository.</p>
+            <p class="saved-id">Search a function or method. Callers sit on the left, the symbol in the center, and callees on the right.</p>
           </div>
         </div>
         <form id="symbol-form" class="searchbar">
@@ -74,13 +74,21 @@
           </div>
           <article class="panel relationships">
             <div class="panel-title"><h3>Neighborhood</h3><span id="graph-note"></span><button type="button" class="ghost" id="architecture-button">Import map</button></div>
+            <div id="graph-legend" class="graph-legend" hidden>
+              <span><i class="swatch focus"></i>selected</span>
+              <span><i class="swatch caller"></i>callers</span>
+              <span><i class="swatch callee"></i>callees</span>
+              <span><i class="swatch class"></i>class</span>
+              <span><i class="swatch test"></i>tests</span>
+              <span><i class="swatch import"></i>imports</span>
+            </div>
             <div id="flow" class="flow"></div>
           </article>
           <article class="panel relationships hidden" id="file-view"></article>
         </div>
       </section>
     </main>
-    <script type="module" src="/graph.js"></script>
-    <script src="/app.js?v=6"></script>
+    <script type="module" src="/graph.js?v=5"></script>
+    <script src="/app.js?v=7"></script>
   </body>
 </html>
