@@ -68,9 +68,16 @@ The mentor demo should select a function such as `process_payment()` and show:
 - related tests;
 - a list of files that may need review after a change.
 
+## Grounded questions
+
+- The scan stores capped excerpts of README, `.gitignore`, dependency manifests, and compose files on the same analysis JSON.
+- `POST /api/analyses/{id}/ask` packs that evidence and calls one provider: offline excerpts, GPT, Claude, Gemini, or Grok.
+- The page shows the answer and file citations. Compare sends the same question to a second provider.
+- `eval/run_eval.py` scores a name-only baseline against the grounded answer. The checked-in `eval/results.md` is the offline run.
+
 ## Later project phases
 
-### Phase 3 — Grounded code Q&A
+### Phase 3 — Broader grounded code Q&A
 
 - Split AST-aware code and documentation into chunks.
 - Generate embeddings using a configurable embedding model.

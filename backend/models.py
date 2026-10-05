@@ -44,6 +44,11 @@ class AnalysisSummary(BaseModel):
     tests: int
 
 
+class DocumentExcerpt(BaseModel):
+    path: str
+    text: str
+
+
 class AnalysisResult(BaseModel):
     analysis_id: str | None = None
     repository: str
@@ -53,7 +58,32 @@ class AnalysisResult(BaseModel):
     symbols: list[Symbol]
     imports: list[ImportRecord]
     relationships: list[Relationship]
+    documents: list[DocumentExcerpt] = []
     warnings: list[str] = []
+
+
+class Citation(BaseModel):
+    path: str
+    line: int | None = None
+
+
+class AskRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=500)
+    provider: str = "offline"
+    compare_with: str | None = None
+
+
+class ModelAnswer(BaseModel):
+    answer: str
+    citations: list[Citation] = []
+    provider: str
+    refused: bool = False
+    mode: str
+
+
+class AskResponse(BaseModel):
+    question: str
+    answers: list[ModelAnswer]
 
 
 class GraphNode(BaseModel):

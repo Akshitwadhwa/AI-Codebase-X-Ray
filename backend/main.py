@@ -11,15 +11,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .analyzer import analyze_source
+from .ask import answer_question
 from .github import RepositoryError, download_repository, parse_repository_url
+from .providers import ProviderError, configured_providers
 from .graph import architecture_view, build_graph, file_view, impact_report, neighborhood_view, search_symbols
-from .models import AnalysisIndexEntry, AnalysisResult, AnalyzeRequest, FileView, GraphView, ImpactReport, SymbolView
+from .models import AnalysisIndexEntry, AnalysisResult, AnalyzeRequest, AskRequest, AskResponse, FileView, GraphView, ImpactReport, SymbolView
 from .store import InvalidAnalysisId, InvalidFilePath, NetworkXGraphStore, safe_relative_path
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("codebase-xray")
-app = FastAPI(title="AI Codebase X-Ray", version="0.2.0", description="Repository graph and impact review")
+app = FastAPI(title="AI Codebase X-Ray", version="0.3.0", description="Repository graph, impact review, and grounded questions")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 ANALYSIS_DIR = Path(__file__).resolve().parent.parent / "data" / "analyses"
@@ -117,6 +119,23 @@ def get_impact(analysis_id: str, symbol_id: str, depth: int = Query(1)) -> Impac
     if report is None:
         raise HTTPException(status_code=404, detail="Symbol was not found in this analysis")
     return report
+
+
+@app.get("/api/providers")
+def list_providers() -> list[dict[str, str | bool]]:
+    return configured_providers()
+
+
+@app.post("/api/analyses/{analysis_id}/ask", response_model=AskResponse)
+def ask_analysis(analysis_id: str, request: AskRequest) -> AskResponse:
+    _analysis_or_404(analysis_id)
+    result = store.load_analysis(analysis_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Analysis was not found")
+    try:
+        return answer_question(result, request.question.strip(), request.provider, request.compare_with)
+    except ProviderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/analyses/{analysis_id}/file", response_model=FileView)

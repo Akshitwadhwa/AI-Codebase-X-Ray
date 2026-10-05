@@ -73,8 +73,51 @@ openForm.addEventListener('submit', async (event) => {
 function prepareImpact(analysisId) {
   currentAnalysisId = analysisId;
   impact.classList.remove('hidden');
+  document.querySelector('#ask').classList.remove('hidden');
+  loadProviders();
   symbolQuery.value = 'process_payment';
   searchSymbols('process_payment', true);
+}
+
+async function loadProviders() {
+  const response = await fetch('/api/providers');
+  const providers = await response.json();
+  const primary = document.querySelector('#ask-provider');
+  const compare = document.querySelector('#ask-compare');
+  const configured = providers.filter((item) => item.configured);
+  primary.innerHTML = configured.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('');
+  compare.innerHTML = `<option value="">No comparison</option>` + configured.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join('');
+}
+
+document.querySelector('#ask-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const question = document.querySelector('#ask-question').value.trim();
+  if (!currentAnalysisId || !question) return;
+  const answers = document.querySelector('#ask-answers');
+  answers.innerHTML = '<p class="reason">Reading the saved scan…</p>';
+  status.classList.remove('error');
+  try {
+    const compare = document.querySelector('#ask-compare').value;
+    const response = await fetch(`/api/analyses/${currentAnalysisId}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, provider: document.querySelector('#ask-provider').value, compare_with: compare || null }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || 'The question failed');
+    answers.innerHTML = payload.answers.map(renderAnswer).join('');
+  } catch (error) {
+    answers.innerHTML = '';
+    status.textContent = error.message;
+    status.classList.add('error');
+  }
+});
+
+function renderAnswer(answer) {
+  const citations = answer.citations.length
+    ? answer.citations.map((item) => `<div class="evidence">${escapeHtml(item.path)}${item.line ? `:${item.line}` : ''}</div>`).join('')
+    : '<p class="reason">No file citation.</p>';
+  return `<article class="panel answer"><div class="panel-title"><h3>${escapeHtml(answer.provider)}</h3><span>${escapeHtml(answer.mode)}${answer.refused ? ' · not in this scan' : ''}</span></div><p>${escapeHtml(answer.answer)}</p><div class="stack"><h4>Citations</h4>${citations}</div></article>`;
 }
 
 symbolForm.addEventListener('submit', (event) => {

@@ -35,6 +35,25 @@
         <p id="warnings" class="warnings"></p>
       </section>
 
+      <section id="ask" class="impact hidden">
+        <div class="result-heading">
+          <div>
+            <div class="eyebrow">GROUNDED QUESTIONS</div>
+            <h2>Ask about this repository.</h2>
+            <p class="saved-id">Answers use the saved scan and excerpts. A citation is a file from that scan. Compare sends the same question to a second model.</p>
+          </div>
+        </div>
+        <form id="ask-form" class="ask-form">
+          <textarea id="ask-question" rows="3" maxlength="500" placeholder="What database does this repository use?"></textarea>
+          <div class="searchbar">
+            <select id="ask-provider"></select>
+            <select id="ask-compare"></select>
+            <button type="submit">Ask</button>
+          </div>
+        </form>
+        <div id="ask-answers"></div>
+      </section>
+
       <section id="impact" class="impact hidden">
         <div class="result-heading">
           <div>

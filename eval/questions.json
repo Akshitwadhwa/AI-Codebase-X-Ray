@@ -1,0 +1,17 @@
+[
+  {"id": "billing-db", "repo": "billing-api", "question": "What database does this repository use?", "answerable": true, "paths": ["README.md", "requirements.txt", "app/db.py"]},
+  {"id": "billing-backend", "repo": "billing-api", "question": "How is the backend built?", "answerable": true, "paths": ["README.md", "backend/main.py", "requirements.txt"]},
+  {"id": "billing-ignore", "repo": "billing-api", "question": "What does the gitignore file hide?", "answerable": true, "paths": [".gitignore"]},
+  {"id": "billing-packages", "repo": "billing-api", "question": "Which Python packages are listed for the backend?", "answerable": true, "paths": ["requirements.txt"]},
+  {"id": "billing-entry", "repo": "billing-api", "question": "Where is the FastAPI app created?", "answerable": true, "paths": ["backend/main.py"]},
+  {"id": "node-db", "repo": "node-store", "question": "What database does this repository use?", "answerable": true, "paths": ["README.md", "package.json"]},
+  {"id": "node-orm", "repo": "node-store", "question": "Which ORM does the server use?", "answerable": true, "paths": ["README.md", "package.json"]},
+  {"id": "node-ignore", "repo": "node-store", "question": "What does gitignore hide?", "answerable": true, "paths": [".gitignore"]},
+  {"id": "node-server", "repo": "node-store", "question": "How is the backend server started?", "answerable": true, "paths": ["src/index.js", "package.json"]},
+  {"id": "node-deps", "repo": "node-store", "question": "Which packages does package.json depend on?", "answerable": true, "paths": ["package.json"]},
+  {"id": "notes-about", "repo": "notes-only", "question": "What is this repository about?", "answerable": true, "paths": ["README.md"]},
+  {"id": "notes-db", "repo": "notes-only", "question": "What database does this repository use?", "answerable": false, "paths": []},
+  {"id": "notes-ignore", "repo": "notes-only", "question": "What does gitignore hide?", "answerable": false, "paths": []},
+  {"id": "notes-backend", "repo": "notes-only", "question": "How is the backend built?", "answerable": false, "paths": []},
+  {"id": "notes-orm", "repo": "notes-only", "question": "Which ORM does the server use?", "answerable": false, "paths": []}
+]

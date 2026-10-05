@@ -1,0 +1,427 @@
+{
+  "provider": "offline",
+  "research_question": "Does grounding a repository question in the saved scan produce more supported answers than asking the same model with only the repository name?",
+  "summary": [
+    {
+      "mode": "baseline",
+      "questions": 15,
+      "citation_hit_rate": 0.0,
+      "abstention_accuracy": 0.267,
+      "supported_rate": 0.267
+    },
+    {
+      "mode": "grounded",
+      "questions": 15,
+      "citation_hit_rate": 1.0,
+      "abstention_accuracy": 1.0,
+      "supported_rate": 1.0
+    }
+  ],
+  "rows": [
+    {
+      "id": "billing-db",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "README.md",
+        "requirements.txt",
+        "app/db.py",
+        "app/db.py"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-db",
+      "repo": "billing-api",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "billing-backend",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "README.md",
+        "requirements.txt",
+        "requirements.txt",
+        "backend/main.py",
+        "backend/main.py"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-backend",
+      "repo": "billing-api",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "billing-ignore",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        ".gitignore",
+        ".gitignore"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-ignore",
+      "repo": "billing-api",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "billing-packages",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "README.md",
+        "requirements.txt",
+        "requirements.txt",
+        "backend/main.py",
+        "backend/main.py"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-packages",
+      "repo": "billing-api",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "billing-entry",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "README.md",
+        "requirements.txt",
+        "app/db.py",
+        "backend/main.py",
+        "app/db.py"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-entry",
+      "repo": "billing-api",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "node-db",
+      "repo": "node-store",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "README.md",
+        "package.json"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-db",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "node-orm",
+      "repo": "node-store",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "README.md",
+        "package.json",
+        "package.json",
+        "src/index.js"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-orm",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "node-ignore",
+      "repo": "node-store",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        ".gitignore",
+        ".gitignore"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-ignore",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "node-server",
+      "repo": "node-store",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "package.json",
+        "src/index.js"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-server",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "node-deps",
+      "repo": "node-store",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "package.json"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-deps",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "notes-about",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "README.md",
+        "README.md"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-about",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "notes-db",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-db",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-ignore",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-ignore",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-backend",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-backend",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-orm",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-orm",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "order-store",
+  "dependencies": {
+    "express": "^4.19.0",
+    "pg": "^8.11.0",
+    "prisma": "^5.0.0"
+  }
+}

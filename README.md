@@ -25,7 +25,9 @@ cd /Users/Lenovo/Desktop/sem-7/idt/Project_Phase-1
 
 The demo currently supports Python, JavaScript, and TypeScript. It detects files, folders, the primary language, classes, functions/methods, imports, tests, and `CONTAINS`, `IMPORTS`, `CALLS`, and `INHERITS` relationships using Tree-sitter. Each completed result is saved as structured JSON under `data/analyses/` (ignored by Git).
 
-After an analysis finishes, the page searches for `process_payment` when that symbol exists. You can also paste a saved 12-character analysis id and choose **Open saved analysis**. Selecting a symbol loads callers, the containing class, imports, related tests, risk flags, and the files to review. The map is that symbol's neighborhood. RAG, CI workers, and pull-request analysis remain later phases.
+After an analysis finishes, the page searches for `process_payment` when that symbol exists. You can also paste a saved 12-character analysis id and choose **Open saved analysis**. Selecting a symbol loads callers, the containing class, imports, related tests, risk flags, and the files to review. The map is that symbol's neighborhood.
+
+The same page can answer a question from that saved scan. It keeps short excerpts of README, `.gitignore`, dependency files, and compose files. Choose **Offline excerpts**, or set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `XAI_API_KEY` in `.env` to use GPT, Claude, Gemini, or Grok. The key stays on the server. **Compare** asks a second provider the same question. Run `python -m eval.run_eval --provider offline` to compare a name-only baseline with the scan-backed answer.
 
 ## Configuration
 

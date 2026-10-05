@@ -11,12 +11,25 @@ import tree_sitter_javascript as ts_javascript
 import tree_sitter_python as ts_python
 import tree_sitter_typescript as ts_typescript
 
-from .models import AnalysisResult, AnalysisSummary, ImportRecord, Relationship, Symbol
+from .models import AnalysisResult, AnalysisSummary, DocumentExcerpt, ImportRecord, Relationship, Symbol
 
 
 IGNORED_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "env", "dist", "build", "coverage"}
 LANGUAGES = {".py": "Python", ".js": "JavaScript", ".jsx": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript"}
 TEXT_EXTENSIONS = set(LANGUAGES) | {".md", ".json", ".yml", ".yaml", ".css", ".html"}
+DOCUMENT_NAMES = {
+    ".gitignore",
+    "readme",
+    "readme.md",
+    "readme.rst",
+    "readme.txt",
+    "package.json",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "docker-compose.yaml",
+    "dockerfile",
+}
+EXCERPT_LINES = 200
 
 
 def _tree_parser(language: str) -> Parser:
@@ -222,6 +235,17 @@ def _javascript_file(path: Path, relative: str) -> tuple[list[Symbol], list[Impo
     return symbols, imports
 
 
+def is_evidence_document(relative: str) -> bool:
+    name = Path(relative).name.lower()
+    if name in DOCUMENT_NAMES or name.startswith("readme"):
+        return True
+    return name.startswith("requirements") and name.endswith(".txt")
+
+
+def read_excerpt(path: Path, limit: int = EXCERPT_LINES) -> str:
+    return "\n".join(path.read_text(encoding="utf-8", errors="replace").splitlines()[:limit])
+
+
 def is_test_path(path: str) -> bool:
     name = Path(path).name.lower()
     return name.startswith("test_") or name.endswith("_test.py") or ".test." in name or ".spec." in name or "/tests/" in f"/{path.lower()}/"
@@ -247,6 +271,7 @@ def analyze_source(root: Path, repository: str, default_branch: str) -> Analysis
     folders: set[str] = set()
     symbols: list[Symbol] = []
     imports: list[ImportRecord] = []
+    documents: list[DocumentExcerpt] = []
     file_relationships: list[Relationship] = []
     languages: Counter[str] = Counter()
     scanned_source_files = 0
@@ -264,7 +289,15 @@ def analyze_source(root: Path, repository: str, default_branch: str) -> Analysis
             continue
         relative = path.relative_to(root).as_posix()
         folders.update(part_path.as_posix() for part_path in path.relative_to(root).parents if part_path.as_posix() != ".")
+        if is_evidence_document(relative) and len(documents) < 40:
+            try:
+                if path.stat().st_size <= max_source_file_bytes:
+                    documents.append(DocumentExcerpt(path=relative, text=read_excerpt(path)))
+            except OSError:
+                warnings.append(f"Could not read {relative}")
         if path.suffix.lower() not in TEXT_EXTENSIONS:
+            if any(item.path == relative for item in documents):
+                files.append(relative)
             continue
         files.append(relative)
         language = LANGUAGES.get(path.suffix.lower())
@@ -300,4 +333,4 @@ def analyze_source(root: Path, repository: str, default_branch: str) -> Analysis
     primary_language = languages.most_common(1)[0][0] if languages else None
     summary = AnalysisSummary(files=len(files), folders=len(folders), source_files=source_files, languages=dict(languages), primary_language=primary_language, classes=sum(1 for item in symbols if item.kind == "class"), functions=sum(1 for item in symbols if item.kind in {"function", "method"}), imports=len(imports), tests=tests)
     assign_symbol_ids(symbols)
-    return AnalysisResult(repository=repository, default_branch=default_branch, summary=summary, files=files, symbols=symbols, imports=imports, relationships=relationships, warnings=warnings)
+    return AnalysisResult(repository=repository, default_branch=default_branch, summary=summary, files=files, symbols=symbols, imports=imports, relationships=relationships, documents=documents, warnings=warnings)
