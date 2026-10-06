@@ -251,3 +251,93 @@ class AnalysisIndexEntry(BaseModel):
     primary_language: str | None = None
     files: int
     functions: int
+
+
+class GitCheckRequest(BaseModel):
+    target: str = Field(..., min_length=1, max_length=500, description="Pull request URL or repository URL")
+    branch: str | None = Field(None, max_length=200, description="Branch name when target is a repository URL")
+    base: str | None = Field(None, max_length=200, description="Base branch for a repository diff. Defaults to main")
+
+
+class PullRequestInfo(BaseModel):
+    number: int
+    title: str
+    state: str
+    html_url: str
+    author: str
+    base_ref: str
+    base_sha: str
+    head_ref: str
+    head_sha: str
+    head_repository: str
+    body: str = ""
+
+
+class DiffFile(BaseModel):
+    path: str
+    status: str
+    additions: int = 0
+    deletions: int = 0
+    patch: str | None = None
+
+
+class DiffResult(BaseModel):
+    base: str
+    head: str
+    status: str
+    ahead_by: int = 0
+    behind_by: int = 0
+    total_commits: int = 0
+    head_sha: str | None = None
+    truncated: bool = False
+    files: list[DiffFile] = []
+
+
+class FileAtRef(BaseModel):
+    path: str
+    ref: str
+    content: str
+    size: int
+    truncated: bool = False
+
+
+class CiRun(BaseModel):
+    id: int
+    name: str
+    status: str | None = None
+    conclusion: str | None = None
+    html_url: str = ""
+    head_sha: str = ""
+    head_branch: str | None = None
+    event: str | None = None
+    source: str
+
+
+class CiReport(BaseModel):
+    ref: str
+    available: bool
+    runs: list[CiRun] = []
+
+
+class PytestResult(BaseModel):
+    repository: str
+    ref: str
+    exit_code: int
+    stdout: str
+    stderr: str
+    command: str
+    stdout_truncated: bool = False
+    stderr_truncated: bool = False
+
+
+class GitCheckResult(BaseModel):
+    repository: str
+    base: str
+    ref: str
+    head_sha: str
+    pull_request: PullRequestInfo | None = None
+    diff: DiffResult
+    files: list[FileAtRef] = []
+    ci: CiReport
+    pytest: PytestResult
+    warnings: list[str] = []

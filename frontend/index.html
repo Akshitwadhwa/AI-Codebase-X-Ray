@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Codebase X-Ray</title>
-    <link rel="stylesheet" href="/styles.css?v=6" />
+    <link rel="stylesheet" href="/styles.css?v=7" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reactflow@11.11.4/dist/style.css" />
   </head>
   <body>
@@ -23,6 +23,28 @@
         </form>
         <p id="status" class="status" role="status">Ready for a repository URL.</p>
       </header>
+
+      <section id="ci-check" class="ci-check">
+        <div class="result-heading">
+          <div>
+            <div class="eyebrow">CI CHECK</div>
+            <h2>Run pytest on a pull request.</h2>
+            <p class="saved-id">Paste a pull request URL, or a repository URL plus a branch. The server clones that ref, runs pytest, captures the exit code, then deletes the checkout.</p>
+          </div>
+        </div>
+        <form id="ci-form" class="ask-form">
+          <div class="searchbar">
+            <input id="ci-target" required placeholder="https://github.com/owner/repository/pull/1" spellcheck="false" />
+          </div>
+          <div class="searchbar">
+            <input id="ci-branch" placeholder="Branch, if this is not a pull request" spellcheck="false" />
+            <input id="ci-base" placeholder="Base branch (default main)" spellcheck="false" />
+            <button id="ci-button" type="submit">Run check</button>
+          </div>
+        </form>
+        <p id="ci-status" class="status" role="status"></p>
+        <div id="ci-result" class="hidden"></div>
+      </section>
 
       <section id="results" class="results hidden">
         <div class="result-heading"><div><div class="eyebrow">ANALYSIS COMPLETE</div><h2 id="repo-name"></h2><p id="analysis-id" class="saved-id"></p></div><div class="heading-badges"><span id="primary-language" class="badge"></span><span id="branch" class="badge"></span></div></div>
@@ -89,6 +111,6 @@
       </section>
     </main>
     <script type="module" src="/graph.js?v=5"></script>
-    <script src="/app.js?v=7"></script>
+    <script src="/app.js?v=8"></script>
   </body>
 </html>

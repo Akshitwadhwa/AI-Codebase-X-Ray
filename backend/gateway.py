@@ -7,7 +7,8 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query
 
 from .analyzer import analyze_source
-from .github import RepositoryError, download_repository, parse_repository_url
+from .github import RepositoryError, parse_repository_url
+from .services.git import GitService
 from .ask import explain_symbol
 from .graph import architecture_view, build_graph, file_view, impact_report, neighborhood_view, search_symbols
 from .models import (
@@ -18,6 +19,8 @@ from .models import (
     AskResponse,
     ExplainRequest,
     FileView,
+    GitCheckRequest,
+    GitCheckResult,
     GraphView,
     ImpactReport,
     KnowledgeView,
@@ -83,7 +86,7 @@ def analyze(request: AnalyzeRequest) -> AnalysisResult:
             from pathlib import Path
 
             root = Path(temporary)
-            branch = download_repository(owner, repo, root)
+            branch = GitService().download(owner, repo, root)
             source_roots = [item for item in (root / "source").iterdir() if item.is_dir()]
             source = source_roots[0] if source_roots else root / "source"
             logger.info("Analysing %s/%s (%s)", owner, repo, branch)
@@ -187,3 +190,16 @@ def get_file(analysis_id: str, path: str = Query(..., min_length=1)) -> FileView
     if viewed is None:
         raise HTTPException(status_code=404, detail="File was not found in this analysis")
     return viewed
+
+
+@router.post("/api/git/check", response_model=GitCheckResult)
+def git_check(request: GitCheckRequest) -> GitCheckResult:
+    """Run pull-request metadata, diff, CI, and pytest through the Git service."""
+    try:
+        logger.info("Running CI check for %s", request.target)
+        return GitService().check(request.target, request.branch, request.base)
+    except RepositoryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        logger.exception("Unexpected CI check failure")
+        raise HTTPException(status_code=500, detail="The CI check failed unexpectedly. Check the server logs")

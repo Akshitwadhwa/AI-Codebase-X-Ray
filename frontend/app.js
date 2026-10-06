@@ -233,3 +233,69 @@ async function loadFile(path) {
   panel.classList.remove('hidden');
   panel.querySelectorAll('[data-symbol]').forEach((button) => button.addEventListener('click', () => selectSymbol(button.dataset.symbol)));
 }
+
+const ciForm = document.querySelector('#ci-form');
+const ciButton = document.querySelector('#ci-button');
+const ciStatus = document.querySelector('#ci-status');
+const ciResult = document.querySelector('#ci-result');
+
+ciForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  ciButton.disabled = true;
+  ciResult.classList.add('hidden');
+  ciStatus.classList.remove('error');
+  ciStatus.textContent = 'Cloning that ref and running pytest on the server…';
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 180000);
+  try {
+    const response = await fetch('/api/git/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target: document.querySelector('#ci-target').value.trim(),
+        branch: document.querySelector('#ci-branch').value.trim() || null,
+        base: document.querySelector('#ci-base').value.trim() || null,
+      }),
+      signal: controller.signal,
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(errorDetail(payload, 'The check failed'));
+    ciResult.innerHTML = renderCheck(payload);
+    ciResult.classList.remove('hidden');
+    ciStatus.textContent = `pytest finished with exit code ${payload.pytest.exit_code}. The checkout was removed.`;
+  } catch (error) {
+    ciStatus.textContent = error.name === 'AbortError' ? 'The check exceeded 3 minutes.' : error.message;
+    ciStatus.classList.add('error');
+  } finally {
+    clearTimeout(timeout);
+    ciButton.disabled = false;
+  }
+});
+
+function errorDetail(payload, fallback) {
+  return payload && typeof payload.detail === 'string' ? payload.detail : fallback;
+}
+
+function renderCheck(payload) {
+  const pytest = payload.pytest;
+  const outcomeClass = pytest.exit_code === 0 ? 'ci-pass' : 'ci-fail';
+  const pull = payload.pull_request;
+  const heading = pull
+    ? `<p class="impact-meta"><a href="${escapeHtml(pull.html_url)}" target="_blank" rel="noreferrer">PR #${pull.number}</a> · ${escapeHtml(pull.title)} · ${escapeHtml(pull.head_ref)} → ${escapeHtml(pull.base_ref)} · ${escapeHtml(pull.state)} · ${escapeHtml(pull.author)}</p>`
+    : `<p class="impact-meta">${escapeHtml(payload.ref)} → ${escapeHtml(payload.base)}</p>`;
+  const diffMeta = `${payload.diff.total_commits} commits · ${escapeHtml(payload.diff.status)} · ahead ${payload.diff.ahead_by} · behind ${payload.diff.behind_by}`;
+  const files = payload.diff.files.length
+    ? payload.diff.files.map((file) => `<div class="evidence">${escapeHtml(file.status)} ${escapeHtml(file.path)} <span class="reason">+${file.additions} −${file.deletions}</span></div>`).join('')
+    : '<p class="reason">No file changes.</p>';
+  const ci = !payload.ci.available
+    ? '<p class="reason">GitHub did not provide CI runs for this ref.</p>'
+    : (payload.ci.runs.length
+      ? payload.ci.runs.map((run) => {
+          const link = run.html_url ? ` · <a href="${escapeHtml(run.html_url)}" target="_blank" rel="noreferrer">run</a>` : '';
+          return `<div class="evidence">${escapeHtml(run.name)} · ${escapeHtml(run.status || 'unknown')}${run.conclusion ? ` · ${escapeHtml(run.conclusion)}` : ''} · ${escapeHtml(run.source)}${link}</div>`;
+        }).join('')
+      : '<p class="reason">GitHub reported no CI runs for this ref.</p>');
+  const contents = payload.files.map((file) => `<h4>${escapeHtml(file.path)} @ ${escapeHtml(file.ref.slice(0, 12))}</h4><pre class="snippet">${escapeHtml(file.content)}</pre>`).join('');
+  const warnings = payload.warnings.length ? `<p class="warnings">${escapeHtml(payload.warnings.join(' '))}</p>` : '';
+  return `<article class="panel"><div class="panel-title"><h3>${escapeHtml(payload.repository)}</h3><span class="${outcomeClass}">pytest exit ${pytest.exit_code}</span></div>${heading}<p class="reason">${diffMeta} · ${escapeHtml(payload.head_sha.slice(0, 12))}</p><div class="stack"><h4>Diff</h4>${files}<h4>GitHub CI</h4>${ci}<h4>pytest · ${escapeHtml(pytest.repository)} @ ${escapeHtml(pytest.ref)}</h4><p class="reason">${escapeHtml(pytest.command)}</p><p class="reason">stdout</p><pre class="ci-log">${escapeHtml(pytest.stdout || '(no stdout)')}</pre><p class="reason">stderr</p><pre class="ci-log">${escapeHtml(pytest.stderr || '(no stderr)')}</pre>${contents}</div>${warnings}</article>`;
+}
