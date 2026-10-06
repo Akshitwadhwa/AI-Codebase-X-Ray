@@ -13,7 +13,7 @@ from .store import NetworkXGraphStore
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-app = FastAPI(title="AI Codebase X-Ray", version="0.4.0", description="Gateway in front of knowledge, embedding, retrieval, and graph services")
+app = FastAPI(title="AI Codebase X-Ray", version="0.5.0", description="Gateway in front of knowledge, embedding, retrieval, graph, and git services")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 ANALYSIS_DIR = Path(__file__).resolve().parent.parent / "data" / "analyses"
