@@ -36,6 +36,35 @@ class ProviderError(RuntimeError):
     """The selected model could not be called."""
 
 
+_GEMINI_DEFAULT = "gemini-3.8-flash"
+_RETIRED_GEMINI = {"gemini-2.0-flash", "gemini-2.0-flash-001"}
+
+
+def _gemini_model_id() -> str:
+    """Return the Gemini model id, replacing the retired 2.0 Flash default."""
+    raw = os.getenv("GEMINI_MODEL", "").strip()
+    if raw.startswith("models/"):
+        raw = raw[len("models/") :]
+    if not raw or raw in _RETIRED_GEMINI:
+        return _GEMINI_DEFAULT
+    return raw
+
+
+def _gemini_answer_text(body: dict) -> str:
+    """Use the answer text and skip Gemini thought parts."""
+    parts = body["candidates"][0]["content"]["parts"]
+    texts = []
+    for part in parts:
+        if not isinstance(part, dict) or part.get("thought"):
+            continue
+        text = part.get("text")
+        if isinstance(text, str) and text.strip():
+            texts.append(text)
+    if not texts:
+        raise KeyError("text")
+    return texts[-1]
+
+
 def configured_providers() -> list[dict[str, str | bool]]:
     providers = [{"id": "offline", "label": "Offline excerpts", "configured": True}]
     labels = {"openai": "GPT", "anthropic": "Claude", "gemini": "Gemini", "grok": "Grok"}
@@ -101,17 +130,23 @@ def _complete_remote(provider: str, prompt: str) -> str:
         key = os.getenv("GEMINI_API_KEY", "").strip()
         if not key:
             raise ProviderError("Set GEMINI_API_KEY in .env")
-        model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        model = _gemini_model_id()
+        generation: dict = {"maxOutputTokens": 1200}
+        if model.startswith("gemini-3"):
+            generation["thinkingConfig"] = {"thinkingLevel": "low"}
+        else:
+            generation["temperature"] = 0.2
+        payload = {
+            "contents": [{"parts": [{"text": SYSTEM + "\n\n" + prompt}]}],
+            "generationConfig": generation,
+        }
         body = _post_json(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}",
-            {
-                "contents": [{"parts": [{"text": SYSTEM + "\n\n" + prompt}]}],
-                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1200},
-            },
+            payload,
             {"Content-Type": "application/json"},
         )
         try:
-            return body["candidates"][0]["content"]["parts"][0]["text"]
+            return _gemini_answer_text(body)
         except (KeyError, IndexError, TypeError) as exc:
             raise ProviderError("The model provider returned an unexpected response") from exc
     raise ProviderError("Choose offline, openai, anthropic, gemini, or grok")
