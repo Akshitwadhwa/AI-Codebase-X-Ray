@@ -43,6 +43,7 @@ def test_gemini_request_uses_3_8_flash_and_skips_thoughts(monkeypatch) -> None:
     answer = complete("gemini", "What is the backend?", "grounded")
     assert "models/gemini-3.8-flash:generateContent" in captured["url"]
     assert "temperature" not in json.dumps(captured["body"])
+    assert captured["body"]["generationConfig"]["maxOutputTokens"] == 1200
     assert captured["body"]["generationConfig"]["thinkingConfig"]["thinkingLevel"] == "low"
     assert answer.answer == "FastAPI"
     assert answer.refused is False

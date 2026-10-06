@@ -27,7 +27,10 @@ FRAMEWORKS = ("fastapi", "flask", "django", "express", "uvicorn", "starlette", "
 def question_terms(question: str) -> set[str]:
     terms = {token for token in re.findall(r"[a-z0-9_.]+", question.lower()) if len(token) > 2 and token not in STOP}
     expanded = set(terms)
+    skip = set() if _asks_about_backend(question) else {"made", "built"}
     for token in list(terms):
+        if token in skip:
+            continue
         expanded.update(TOPIC_TERMS.get(token, []))
     return expanded
 
@@ -107,8 +110,16 @@ def _stack_lines(result: AnalysisResult) -> list[str]:
     return lines
 
 
+def _question_tokens(question: str) -> set[str]:
+    return {token for token in re.findall(r"[a-z0-9_.]+", question.lower()) if len(token) > 2 and token not in STOP}
+
+
 def _asks_about_backend(question: str) -> bool:
-    return bool(question_terms(question) & {"backend", "server", "made", "built", "stack", "framework"})
+    return bool(_question_tokens(question) & {"backend", "server", "stack", "framework", "language"})
+
+
+def _asks_about_gitignore(question: str) -> bool:
+    return any("gitignore" in token for token in _question_tokens(question))
 
 
 def stack_facts(result: AnalysisResult) -> ModelAnswer | None:
@@ -128,31 +139,89 @@ def stack_facts(result: AnalysisResult) -> ModelAnswer | None:
         citations.append(Citation(path=path, line=line))
 
     if language:
-        sentences.append(f"The backend is {language}.")
+        sentences.append(
+            f"The backend is {language}. That is the primary language of the source files in this scan, so it is the strongest evidence for what the repository is built with."
+        )
     if names:
-        sentences.append("Frameworks in the scan: " + ", ".join(names) + ".")
+        sentences.append(
+            "The same scan finds these frameworks and servers: "
+            + ", ".join(names)
+            + ". They appear in dependency files or import statements, which is how the project starts its backend."
+        )
     for path, line, text in dependencies[:8]:
         cite(path, line)
-        sentences.append(f"{path}:{line} lists {text}.")
+        sentences.append(f"{path} lists {text} at line {line}.")
     for item in imports:
         cite(item.file_path, item.line)
-        sentences.append(f"{item.file_path}:{item.line} imports {item.imported_name}.")
+        sentences.append(f"{item.file_path} imports {item.imported_name} at line {item.line}.")
     if language and not citations:
         extension = {"Python": ".py", "JavaScript": ".js", "TypeScript": ".ts"}.get(language)
         source = next((path for path in result.files if extension and path.endswith(extension)), None)
         if source:
             cite(source, 1)
-    return ModelAnswer(answer=" ".join(sentences), citations=citations[:6], provider="offline", refused=False, mode="grounded")
+            sentences.append(f"One of the {language} source files is {source}.")
+    if not names and not dependencies:
+        sentences.append(
+            "No FastAPI, Flask, Django, Express, Uvicorn, Starlette, or NestJS import was found in the dependency files that were saved. The language above is what the scan can support."
+        )
+    return ModelAnswer(answer="\n\n".join(sentences), citations=citations[:6], provider="offline", refused=False, mode="grounded")
 
 
-def _with_stack_facts(answer: ModelAnswer, result: AnalysisResult, question: str) -> ModelAnswer:
-    if answer.mode == "baseline" or not _asks_about_backend(question):
+def _gitignore_lines(result: AnalysisResult) -> list[str]:
+    lines: list[str] = []
+    for document in result.documents:
+        if not document.path.lower().endswith(".gitignore"):
+            continue
+        for number, line in enumerate(document.text.splitlines()[:40], 1):
+            if line.strip():
+                lines.append(f"[{document.path}:{number}] {line.strip()}")
+    return lines
+
+
+def gitignore_facts(result: AnalysisResult) -> ModelAnswer | None:
+    quoted: list[tuple[str, int, str]] = []
+    for document in result.documents:
+        if not document.path.lower().endswith(".gitignore"):
+            continue
+        for number, line in enumerate(document.text.splitlines()[:40], 1):
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                quoted.append((document.path, number, stripped))
+    if not quoted:
+        return None
+    citations = [Citation(path=path, line=number) for path, number, _text in quoted[:6]]
+    listed = " ".join(f"{path} line {number} ignores {text}." for path, number, text in quoted[:8])
+    answer = (
+        "The .gitignore file is the list of paths Git leaves out of the repository. "
+        f"In this scan it is made up of these patterns: {listed} "
+        "Each pattern hides matching files from commits. Comment lines were skipped. "
+        "These saved lines are the evidence for what the gitignore contains."
+    )
+    return ModelAnswer(answer=answer, citations=citations, provider="offline", refused=False, mode="grounded")
+
+
+def _mentions_gitignore(answer: ModelAnswer, patterns: list[str]) -> bool:
+    if any(item.path.lower().endswith(".gitignore") for item in answer.citations):
+        return True
+    blob = answer.answer.lower()
+    return any(pattern.lower() in blob for pattern in patterns)
+
+
+def _with_topic_facts(answer: ModelAnswer, result: AnalysisResult, question: str) -> ModelAnswer:
+    if answer.mode == "baseline":
+        return answer
+    if _asks_about_gitignore(question):
+        facts = gitignore_facts(result)
+        patterns = []
+        if facts is not None:
+            patterns = [text for _document in result.documents if _document.path.lower().endswith(".gitignore") for _number, line in enumerate(_document.text.splitlines(), 1) if (text := line.strip()) and not text.startswith("#")]
+        if facts is not None and (answer.refused or not _mentions_gitignore(answer, patterns)):
+            return ModelAnswer(answer=facts.answer, citations=facts.citations, provider=answer.provider, refused=False, mode=answer.mode)
+        return answer
+    if not answer.refused or not _asks_about_backend(question):
         return answer
     facts = stack_facts(result)
     if facts is None:
-        return answer
-    tokens = [token for token in [result.summary.primary_language, *FRAMEWORKS] if token]
-    if not answer.refused and any(token.lower() in answer.answer.lower() for token in tokens):
         return answer
     return ModelAnswer(answer=facts.answer, citations=facts.citations, provider=answer.provider, refused=False, mode=answer.mode)
 
@@ -171,7 +240,8 @@ def pack_context(result: AnalysisResult, question: str, baseline: bool = False) 
         "Context lines are prefixed with [path:line]. The scan-summary line and dependency imports are evidence for what the backend is built with.",
     ]
     seen: set[str] = set()
-    for line in [*_stack_lines(result), *_vector_lines(result, question)]:
+    topic_lines = _gitignore_lines(result) if _asks_about_gitignore(question) else []
+    for line in [*topic_lines, *_stack_lines(result), *_vector_lines(result, question)]:
         if line not in seen:
             seen.add(line)
             lines.append(line)
@@ -205,6 +275,63 @@ def pack_context(result: AnalysisResult, question: str, baseline: bool = False) 
     return "\n".join(lines)[:12000]
 
 
+def _offline_prose(question: str, evidence: list[tuple[str, int, str]]) -> str:
+    grouped: dict[str, list[tuple[int, str]]] = {}
+    for path, line, text in evidence:
+        grouped.setdefault(path, []).append((line, text))
+    paragraphs = [
+        f"The saved scan can answer “{question}” from the excerpts below. Nothing outside those lines is added.",
+    ]
+    for path, rows in grouped.items():
+        details = " ".join(f"Line {line} says “{text}”." for line, text in rows)
+        paragraphs.append(f"In {path}, {details}")
+    paragraphs.append("Those files are the citations for this answer. Open them at the listed lines to see the same evidence.")
+    return "\n\n".join(paragraphs)
+
+
+def lengthen_grounded(answer: ModelAnswer, prompt: str) -> ModelAnswer:
+    """Turn a short grounded reply into a few paragraphs built from the prompt excerpts."""
+    if answer.mode == "baseline" or answer.refused:
+        return answer
+    if len(re.findall(r"[A-Za-z0-9_']+", answer.answer)) >= 80:
+        return answer
+    evidence: list[tuple[str, int, str]] = []
+    seen: set[tuple[str, int]] = set()
+    for line in prompt.splitlines():
+        match = re.match(r"\[([^:\]]+):(\d+)\]\s*(.*)", line)
+        if not match or match.group(1) == "scan-summary":
+            continue
+        path, line_no, text = match.group(1), int(match.group(2)), match.group(3).strip()
+        if not text or (path, line_no) in seen:
+            continue
+        seen.add((path, line_no))
+        evidence.append((path, line_no, text))
+        if len(evidence) >= 6:
+            break
+    if not evidence:
+        return answer
+    question = ""
+    for line in prompt.splitlines():
+        if line.startswith("Question: "):
+            question = line.removeprefix("Question: ")
+            break
+    opening = answer.answer.strip()
+    body = _offline_prose(question or "this question", evidence)
+    citations = list(answer.citations)
+    cited = {(item.path, item.line) for item in citations}
+    for path, line_no, _text in evidence:
+        if (path, line_no) not in cited:
+            citations.append(Citation(path=path, line=line_no))
+            cited.add((path, line_no))
+    return ModelAnswer(
+        answer=f"{opening}\n\n{body}",
+        citations=citations[:8],
+        provider=answer.provider,
+        refused=False,
+        mode=answer.mode,
+    )
+
+
 def offline_answer(prompt: str, mode: str) -> ModelAnswer:
     if mode == "baseline" or "No source files" in prompt:
         return ModelAnswer(
@@ -220,7 +347,7 @@ def offline_answer(prompt: str, mode: str) -> ModelAnswer:
             break
     terms = question_terms(question)
     citations: list[Citation] = []
-    chosen: list[str] = []
+    evidence: list[tuple[str, int, str]] = []
     seen: set[tuple[str, int | None]] = set()
     for line in prompt.splitlines():
         match = re.match(r"\[([^:\]]+):(\d+)\]\s*(.*)", line)
@@ -236,23 +363,23 @@ def offline_answer(prompt: str, mode: str) -> ModelAnswer:
             continue
         seen.add(key)
         citations.append(Citation(path=path, line=line_no))
-        chosen.append(f"{path}:{line_no} {text}")
+        evidence.append((path, line_no, text))
         if len(citations) >= 6:
             break
-    if not chosen:
+    if not evidence:
         return ModelAnswer(answer="Not in this scan. The saved excerpts do not contain an answer.", provider="offline", refused=True, mode=mode)
-    return ModelAnswer(answer=" ".join(chosen), citations=citations, provider="offline", refused=False, mode=mode)
+    return ModelAnswer(answer=_offline_prose(question, evidence), citations=citations, provider="offline", refused=False, mode=mode)
 
 
 def answer_question(result: AnalysisResult, question: str, provider: str, compare_with: str | None = None) -> AskResponse:
     grounded = pack_context(result, question, baseline=False)
-    answers = [_with_stack_facts(complete(provider, grounded, "grounded"), result, question)]
+    answers = [lengthen_grounded(_with_topic_facts(complete(provider, grounded, "grounded"), result, question), grounded)]
     if compare_with == "without-rag":
         answers.append(answer_baseline(result, question, provider))
     elif compare_with:
         if compare_with == provider:
             raise ProviderError("Choose a different provider to compare")
-        answers.append(_with_stack_facts(complete(compare_with, grounded, "grounded"), result, question))
+        answers.append(lengthen_grounded(_with_topic_facts(complete(compare_with, grounded, "grounded"), result, question), grounded))
     return AskResponse(question=question, answers=answers)
 
 
@@ -265,7 +392,7 @@ def symbol_prompt(report) -> str:
     lines = [
         f"Repository: {report.symbol.file_path}",
         "Question: What does this function do, and which files call it?",
-        "Use only the evidence below. Do not invent callers.",
+        "Write two paragraphs of plain prose. The first explains what the saved code does. The second names each caller and its file. Use only the evidence below. Do not invent callers.",
         f"[{symbol.file_path}:{symbol.start_line}] {symbol.kind} {symbol.parent + '.' if symbol.parent else ''}{symbol.name}",
     ]
     if symbol.snippet:
@@ -287,19 +414,24 @@ def explain_symbol(report, provider: str) -> ModelAnswer:
     if provider == "offline":
         direct = [item for item in report.callers if item.depth == 1 and item.file_path]
         if direct:
-            called = "; ".join(f"{item.name} in {item.file_path}" for item in direct)
-            caller_sentence = f"It is called from {called}."
+            called = " ".join(f"{item.name} in {item.file_path} calls it{f' at line {item.line}' if item.line else ''}." for item in direct)
+            caller_sentence = f"The graph resolves these callers. {called} A change to {symbol.name} should be checked against each of those files."
         else:
-            caller_sentence = "No resolved caller was found in the graph."
+            caller_sentence = f"No resolved caller was found in the graph, so the scan cannot name another file that invokes {symbol.name}."
         place = f"inside {symbol.parent}, " if symbol.parent else ""
-        snippet = f" The saved code is: {symbol.snippet.strip()}" if symbol.snippet else ""
+        snippet = ""
+        if symbol.snippet:
+            snippet = f" The saved code, starting at line {symbol.start_line}, is: {symbol.snippet.strip()} That snippet is the evidence for what the function does."
         citations = [Citation(path=symbol.file_path, line=symbol.start_line)] if symbol.file_path else []
         citations.extend(Citation(path=item.file_path, line=item.line) for item in direct if item.file_path)
-        return ModelAnswer(
-            answer=f"{symbol.name} is a {symbol.kind} {place}in {symbol.file_path}.{snippet} {caller_sentence}",
+        answer = ModelAnswer(
+            answer=(
+                f"{symbol.name} is a {symbol.kind} {place}in {symbol.file_path}.{snippet}\n\n{caller_sentence}"
+            ),
             citations=citations,
             provider="offline",
             refused=False,
             mode="grounded",
         )
-    return complete(provider, symbol_prompt(report), "grounded")
+        return lengthen_grounded(answer, symbol_prompt(report))
+    return lengthen_grounded(complete(provider, symbol_prompt(report), "grounded"), symbol_prompt(report))
