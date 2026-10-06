@@ -67,7 +67,7 @@ The question dropdown always includes **Offline excerpts**. It also lists a clou
 | --- | --- | --- |
 | GPT | `OPENAI_API_KEY` | `gpt-4o-mini` |
 | Claude | `ANTHROPIC_API_KEY` | `claude-3-5-haiku-20241022` |
-| Gemini | `GEMINI_API_KEY` | `gemini-2.0-flash` |
+| Gemini | `GEMINI_API_KEY` | `gemini-3.8-flash` |
 | Grok | `XAI_API_KEY` | `grok-3` |
 
 Keys stay on the server.
