@@ -46,6 +46,35 @@ def test_refusing_model_still_answers_backend_from_the_scan(tmp_path: Path, monk
     assert baseline.refused is True
 
 
+def test_gitignore_question_quotes_the_file_not_the_language(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / ".gitignore").write_text(".env\nnode_modules\n", encoding="utf-8")
+    (tmp_path / "lib").mkdir()
+    (tmp_path / "lib" / "sections.ts").write_text("export const section = 1\n", encoding="utf-8")
+    result = analyze_source(tmp_path, "demo/app", "main")
+
+    def wrong_backend(provider: str, prompt: str, mode: str):
+        from backend.models import Citation, ModelAnswer
+
+        return ModelAnswer(
+            answer="The backend is TypeScript.",
+            citations=[Citation(path="lib/sections.ts", line=1)],
+            provider=provider,
+            refused=False,
+            mode=mode,
+        )
+
+    monkeypatch.setattr("backend.ask.complete", wrong_backend)
+    packed = pack_context(result, "what is the gitignore made up of")
+    assert ".env" in packed
+    assert "node_modules" in packed
+    answer = answer_question(result, "what is the gitignore made up of", "openai").answers[0]
+    assert answer.refused is False
+    assert ".env" in answer.answer
+    assert "node_modules" in answer.answer
+    assert "TypeScript" not in answer.answer
+    assert any(item.path == ".gitignore" for item in answer.citations)
+
+
 def test_scan_keeps_gitignore_and_requirements(tmp_path: Path) -> None:
     (tmp_path / ".gitignore").write_text(".env\n.venv\n", encoding="utf-8")
     (tmp_path / "requirements.txt").write_text("fastapi\nsqlalchemy\n", encoding="utf-8")

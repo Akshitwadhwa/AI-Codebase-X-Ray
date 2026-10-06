@@ -27,7 +27,10 @@ FRAMEWORKS = ("fastapi", "flask", "django", "express", "uvicorn", "starlette", "
 def question_terms(question: str) -> set[str]:
     terms = {token for token in re.findall(r"[a-z0-9_.]+", question.lower()) if len(token) > 2 and token not in STOP}
     expanded = set(terms)
+    skip = set() if _asks_about_backend(question) else {"made", "built"}
     for token in list(terms):
+        if token in skip:
+            continue
         expanded.update(TOPIC_TERMS.get(token, []))
     return expanded
 
@@ -107,8 +110,16 @@ def _stack_lines(result: AnalysisResult) -> list[str]:
     return lines
 
 
+def _question_tokens(question: str) -> set[str]:
+    return {token for token in re.findall(r"[a-z0-9_.]+", question.lower()) if len(token) > 2 and token not in STOP}
+
+
 def _asks_about_backend(question: str) -> bool:
-    return bool(question_terms(question) & {"backend", "server", "made", "built", "stack", "framework"})
+    return bool(_question_tokens(question) & {"backend", "server", "stack", "framework", "language"})
+
+
+def _asks_about_gitignore(question: str) -> bool:
+    return any("gitignore" in token for token in _question_tokens(question))
 
 
 def stack_facts(result: AnalysisResult) -> ModelAnswer | None:
@@ -145,14 +156,59 @@ def stack_facts(result: AnalysisResult) -> ModelAnswer | None:
     return ModelAnswer(answer=" ".join(sentences), citations=citations[:6], provider="offline", refused=False, mode="grounded")
 
 
-def _with_stack_facts(answer: ModelAnswer, result: AnalysisResult, question: str) -> ModelAnswer:
-    if answer.mode == "baseline" or not _asks_about_backend(question):
+def _gitignore_lines(result: AnalysisResult) -> list[str]:
+    lines: list[str] = []
+    for document in result.documents:
+        if not document.path.lower().endswith(".gitignore"):
+            continue
+        for number, line in enumerate(document.text.splitlines()[:40], 1):
+            if line.strip():
+                lines.append(f"[{document.path}:{number}] {line.strip()}")
+    return lines
+
+
+def gitignore_facts(result: AnalysisResult) -> ModelAnswer | None:
+    quoted: list[tuple[str, int, str]] = []
+    for document in result.documents:
+        if not document.path.lower().endswith(".gitignore"):
+            continue
+        for number, line in enumerate(document.text.splitlines()[:40], 1):
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                quoted.append((document.path, number, stripped))
+    if not quoted:
+        return None
+    citations = [Citation(path=path, line=number) for path, number, _text in quoted[:6]]
+    patterns = ", ".join(text for _path, _number, text in quoted[:8])
+    return ModelAnswer(
+        answer=f"The .gitignore is made up of: {patterns}.",
+        citations=citations,
+        provider="offline",
+        refused=False,
+        mode="grounded",
+    )
+
+
+def _mentions_gitignore(answer: ModelAnswer, patterns: list[str]) -> bool:
+    if any(item.path.lower().endswith(".gitignore") for item in answer.citations):
+        return True
+    blob = answer.answer.lower()
+    return any(pattern.lower() in blob for pattern in patterns)
+
+
+def _with_topic_facts(answer: ModelAnswer, result: AnalysisResult, question: str) -> ModelAnswer:
+    if answer.mode == "baseline":
+        return answer
+    if _asks_about_gitignore(question):
+        facts = gitignore_facts(result)
+        patterns = [part.strip() for part in facts.answer.split(":", 1)[-1].split(",")] if facts is not None else []
+        if facts is not None and (answer.refused or not _mentions_gitignore(answer, patterns)):
+            return ModelAnswer(answer=facts.answer, citations=facts.citations, provider=answer.provider, refused=False, mode=answer.mode)
+        return answer
+    if not answer.refused or not _asks_about_backend(question):
         return answer
     facts = stack_facts(result)
     if facts is None:
-        return answer
-    tokens = [token for token in [result.summary.primary_language, *FRAMEWORKS] if token]
-    if not answer.refused and any(token.lower() in answer.answer.lower() for token in tokens):
         return answer
     return ModelAnswer(answer=facts.answer, citations=facts.citations, provider=answer.provider, refused=False, mode=answer.mode)
 
@@ -171,7 +227,8 @@ def pack_context(result: AnalysisResult, question: str, baseline: bool = False) 
         "Context lines are prefixed with [path:line]. The scan-summary line and dependency imports are evidence for what the backend is built with.",
     ]
     seen: set[str] = set()
-    for line in [*_stack_lines(result), *_vector_lines(result, question)]:
+    topic_lines = _gitignore_lines(result) if _asks_about_gitignore(question) else []
+    for line in [*topic_lines, *_stack_lines(result), *_vector_lines(result, question)]:
         if line not in seen:
             seen.add(line)
             lines.append(line)
@@ -246,13 +303,13 @@ def offline_answer(prompt: str, mode: str) -> ModelAnswer:
 
 def answer_question(result: AnalysisResult, question: str, provider: str, compare_with: str | None = None) -> AskResponse:
     grounded = pack_context(result, question, baseline=False)
-    answers = [_with_stack_facts(complete(provider, grounded, "grounded"), result, question)]
+    answers = [_with_topic_facts(complete(provider, grounded, "grounded"), result, question)]
     if compare_with == "without-rag":
         answers.append(answer_baseline(result, question, provider))
     elif compare_with:
         if compare_with == provider:
             raise ProviderError("Choose a different provider to compare")
-        answers.append(_with_stack_facts(complete(compare_with, grounded, "grounded"), result, question))
+        answers.append(_with_topic_facts(complete(compare_with, grounded, "grounded"), result, question))
     return AskResponse(question=question, answers=answers)
 
 
