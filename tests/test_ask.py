@@ -3,10 +3,16 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from backend.analyzer import analyze_source
+from backend.providers import SYSTEM
 from backend.ask import answer_baseline, answer_question, pack_context
 from backend.main import app
 from backend.store import NetworkXGraphStore
 from eval.score import score_answer
+
+
+def test_model_prompt_asks_for_a_long_answer() -> None:
+    assert "three short paragraphs" in SYSTEM
+    assert "160 to 220 words" in SYSTEM
 
 
 def test_backend_question_context_includes_language_and_framework(tmp_path: Path) -> None:
@@ -97,6 +103,9 @@ def test_offline_grounded_answer_cites_sqlite_and_baseline_refuses(tmp_path: Pat
     grounded = answer_question(result, question, "offline").answers[0]
     baseline = answer_baseline(result, question, "offline")
     assert grounded.refused is False
+    assert len(grounded.answer.split()) >= 40
+    assert "\n\n" in grounded.answer
+    assert "sqlite3" in grounded.answer
     assert any(item.path == "app/db.py" for item in grounded.citations)
     assert baseline.refused is True
     assert score_answer(grounded.model_dump(), {"answerable": True, "paths": ["app/db.py"]})["supported"] is True

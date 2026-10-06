@@ -11,12 +11,17 @@ from .models import Citation, ModelAnswer
 SYSTEM = (
     "You answer questions about one scanned software repository. "
     "Use only the context, including the scan-summary line and dependency or framework import lines. "
+    "When the context contains the answer, write about 160 to 220 words in three short paragraphs. "
+    "The first paragraph answers the question directly. "
+    "The second paragraph walks through the files and line numbers that support it, quoting the important lines. "
+    "The third paragraph says how those pieces fit together, and names anything the scan does not show. "
     "If the question asks what the backend is made of and the scan-summary names a language or framework, "
-    "answer with those names, cite the matching lines, and set refused to false. "
-    "If the context does not contain the answer, set refused to true and say what is missing. "
+    "explain that in the same three paragraphs, cite the matching lines, and set refused to false. "
+    "If the context does not contain the answer, set refused to true and use one short paragraph to say what is missing. "
+    "Do not invent files, frameworks, callers, or behavior. "
     "Return one JSON object and no other text: "
     '{"answer": "...", "citations": [{"path": "file", "line": 1}], "refused": false}. '
-    "Every citation path must appear in the context. line is 1-based or null."
+    "The answer field is plain prose. Every citation path must appear in the context. line is 1-based or null."
 )
 
 PROVIDER_ENV = {
@@ -42,7 +47,7 @@ def configured_providers() -> list[dict[str, str | bool]]:
 def _post_json(url: str, payload: dict, headers: dict[str, str]) -> dict:
     request = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=90) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:300]
@@ -57,7 +62,8 @@ def _openai_compatible(base_url: str, env_name: str, model: str, prompt: str) ->
         raise ProviderError(f"Set {env_name} in .env")
     payload = {
         "model": model,
-        "temperature": 0,
+        "temperature": 0.2,
+        "max_tokens": 1200,
         "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
     }
     body = _post_json(f"{base_url}/chat/completions", payload, {"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
@@ -80,8 +86,8 @@ def _complete_remote(provider: str, prompt: str) -> str:
             "https://api.anthropic.com/v1/messages",
             {
                 "model": os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022"),
-                "max_tokens": 800,
-                "temperature": 0,
+                "max_tokens": 1200,
+                "temperature": 0.2,
                 "system": SYSTEM,
                 "messages": [{"role": "user", "content": prompt}],
             },
@@ -98,7 +104,10 @@ def _complete_remote(provider: str, prompt: str) -> str:
         model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         body = _post_json(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}",
-            {"contents": [{"parts": [{"text": SYSTEM + "\n\n" + prompt}]}], "generationConfig": {"temperature": 0}},
+            {
+                "contents": [{"parts": [{"text": SYSTEM + "\n\n" + prompt}]}],
+                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1200},
+            },
             {"Content-Type": "application/json"},
         )
         try:
