@@ -1,25 +1,134 @@
 {
-  "provider": "offline",
   "research_question": "Does grounding a repository question in the saved scan produce more supported answers than asking the same model with only the repository name?",
-  "summary": [
+  "prompts": 10,
+  "questions": [
     {
-      "mode": "baseline",
-      "questions": 15,
-      "citation_hit_rate": 0.0,
-      "abstention_accuracy": 0.267,
-      "supported_rate": 0.267
+      "id": "billing-db",
+      "repo": "billing-api",
+      "question": "What database does this repository use?",
+      "answerable": true
     },
     {
-      "mode": "grounded",
-      "questions": 15,
-      "citation_hit_rate": 1.0,
-      "abstention_accuracy": 1.0,
-      "supported_rate": 1.0
+      "id": "billing-backend",
+      "repo": "billing-api",
+      "question": "How is the backend built?",
+      "answerable": true
+    },
+    {
+      "id": "billing-ignore",
+      "repo": "billing-api",
+      "question": "What does the gitignore file hide?",
+      "answerable": true
+    },
+    {
+      "id": "node-db",
+      "repo": "node-store",
+      "question": "What database does this repository use?",
+      "answerable": true
+    },
+    {
+      "id": "node-orm",
+      "repo": "node-store",
+      "question": "Which ORM does the server use?",
+      "answerable": true
+    },
+    {
+      "id": "node-ignore",
+      "repo": "node-store",
+      "question": "What does gitignore hide?",
+      "answerable": true
+    },
+    {
+      "id": "notes-about",
+      "repo": "notes-only",
+      "question": "What is this repository about?",
+      "answerable": true
+    },
+    {
+      "id": "notes-db",
+      "repo": "notes-only",
+      "question": "What database does this repository use?",
+      "answerable": false
+    },
+    {
+      "id": "notes-ignore",
+      "repo": "notes-only",
+      "question": "What does gitignore hide?",
+      "answerable": false
+    },
+    {
+      "id": "notes-backend",
+      "repo": "notes-only",
+      "question": "How is the backend built?",
+      "answerable": false
+    }
+  ],
+  "providers": [
+    {
+      "id": "offline",
+      "label": "Offline excerpts",
+      "measured": true,
+      "summary": [
+        {
+          "mode": "baseline",
+          "questions": 10,
+          "citation_hit_rate": 0.0,
+          "abstention_accuracy": 0.3,
+          "supported_rate": 0.3
+        },
+        {
+          "mode": "grounded",
+          "questions": 10,
+          "citation_hit_rate": 1.0,
+          "abstention_accuracy": 1.0,
+          "supported_rate": 1.0
+        }
+      ]
+    },
+    {
+      "id": "openai",
+      "label": "GPT",
+      "measured": true,
+      "summary": [
+        {
+          "mode": "baseline",
+          "questions": 10,
+          "citation_hit_rate": 0.0,
+          "abstention_accuracy": 0.3,
+          "supported_rate": 0.3
+        },
+        {
+          "mode": "grounded",
+          "questions": 10,
+          "citation_hit_rate": 1.0,
+          "abstention_accuracy": 0.8,
+          "supported_rate": 0.8
+        }
+      ]
+    },
+    {
+      "id": "anthropic",
+      "label": "Claude",
+      "measured": false,
+      "reason": "ANTHROPIC_API_KEY"
+    },
+    {
+      "id": "gemini",
+      "label": "Gemini",
+      "measured": false,
+      "error": "HTTP 429, free-tier daily quota for gemini-3.8-flash"
+    },
+    {
+      "id": "grok",
+      "label": "Grok",
+      "measured": false,
+      "reason": "XAI_API_KEY"
     }
   ],
   "rows": [
     {
       "id": "billing-db",
+      "question": "What database does this repository use?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -41,6 +150,7 @@
     },
     {
       "id": "billing-db",
+      "question": "What database does this repository use?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -53,6 +163,7 @@
     },
     {
       "id": "billing-backend",
+      "question": "How is the backend built?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -72,6 +183,7 @@
     },
     {
       "id": "billing-backend",
+      "question": "How is the backend built?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -84,6 +196,7 @@
     },
     {
       "id": "billing-ignore",
+      "question": "What does the gitignore file hide?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -103,6 +216,7 @@
     },
     {
       "id": "billing-ignore",
+      "question": "What does the gitignore file hide?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -114,18 +228,115 @@
       "supported": false
     },
     {
-      "id": "billing-packages",
-      "repo": "billing-api",
+      "id": "node-db",
+      "question": "What database does this repository use?",
+      "repo": "node-store",
       "mode": "grounded",
       "provider": "offline",
       "answerable": true,
       "refused": false,
       "citations": [
-        "requirements.txt",
-        "requirements.txt",
-        "backend/main.py",
+        "package.json",
+        "package.json",
+        "package.json",
+        "package.json",
+        "package.json",
+        "package.json"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-db",
+      "question": "What database does this repository use?",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "node-orm",
+      "question": "Which ORM does the server use?",
+      "repo": "node-store",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "package.json",
+        "package.json",
+        "src/index.js",
+        "package.json",
+        "package.json",
+        "package.json",
+        "package.json"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-orm",
+      "question": "Which ORM does the server use?",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "node-ignore",
+      "question": "What does gitignore hide?",
+      "repo": "node-store",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        ".gitignore",
+        ".gitignore",
+        "package.json",
+        "package.json",
+        "package.json",
+        "package.json"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "node-ignore",
+      "question": "What does gitignore hide?",
+      "repo": "node-store",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "notes-about",
+      "question": "What is this repository about?",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": true,
+      "refused": false,
+      "citations": [
         "README.md",
-        "requirements.txt",
         "README.md"
       ],
       "citation_hit": true,
@@ -133,8 +344,9 @@
       "supported": true
     },
     {
-      "id": "billing-packages",
-      "repo": "billing-api",
+      "id": "notes-about",
+      "question": "What is this repository about?",
+      "repo": "notes-only",
       "mode": "baseline",
       "provider": "offline",
       "answerable": true,
@@ -145,17 +357,98 @@
       "supported": false
     },
     {
-      "id": "billing-entry",
-      "repo": "billing-api",
+      "id": "notes-db",
+      "question": "What database does this repository use?",
+      "repo": "notes-only",
       "mode": "grounded",
       "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-db",
+      "question": "What database does this repository use?",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-ignore",
+      "question": "What does gitignore hide?",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-ignore",
+      "question": "What does gitignore hide?",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-backend",
+      "question": "How is the backend built?",
+      "repo": "notes-only",
+      "mode": "grounded",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "notes-backend",
+      "question": "How is the backend built?",
+      "repo": "notes-only",
+      "mode": "baseline",
+      "provider": "offline",
+      "answerable": false,
+      "refused": true,
+      "citations": [],
+      "citation_hit": null,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-db",
+      "question": "What database does this repository use?",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "openai",
       "answerable": true,
       "refused": false,
       "citations": [
+        "app/db.py",
+        "app/db.py",
+        "requirements.txt",
+        "requirements.txt",
         "requirements.txt",
         "backend/main.py",
-        "app/db.py",
-        "README.md",
         "app/db.py",
         "app/db.py"
       ],
@@ -164,10 +457,79 @@
       "supported": true
     },
     {
-      "id": "billing-entry",
+      "id": "billing-db",
+      "question": "What database does this repository use?",
       "repo": "billing-api",
       "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "billing-backend",
+      "question": "How is the backend built?",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "openai",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        "scan-summary",
+        "requirements.txt",
+        "backend/main.py",
+        "README.md",
+        "app/db.py",
+        "requirements.txt",
+        "requirements.txt",
+        "README.md"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-backend",
+      "question": "How is the backend built?",
+      "repo": "billing-api",
+      "mode": "baseline",
+      "provider": "openai",
+      "answerable": true,
+      "refused": true,
+      "citations": [],
+      "citation_hit": false,
+      "abstention_correct": false,
+      "supported": false
+    },
+    {
+      "id": "billing-ignore",
+      "question": "What does the gitignore file hide?",
+      "repo": "billing-api",
+      "mode": "grounded",
+      "provider": "openai",
+      "answerable": true,
+      "refused": false,
+      "citations": [
+        ".gitignore",
+        ".gitignore",
+        ".gitignore",
+        "requirements.txt",
+        "requirements.txt",
+        "requirements.txt"
+      ],
+      "citation_hit": true,
+      "abstention_correct": true,
+      "supported": true
+    },
+    {
+      "id": "billing-ignore",
+      "question": "What does the gitignore file hide?",
+      "repo": "billing-api",
+      "mode": "baseline",
+      "provider": "openai",
       "answerable": true,
       "refused": true,
       "citations": [],
@@ -177,9 +539,10 @@
     },
     {
       "id": "node-db",
+      "question": "What database does this repository use?",
       "repo": "node-store",
       "mode": "grounded",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": false,
       "citations": [
@@ -196,9 +559,10 @@
     },
     {
       "id": "node-db",
+      "question": "What database does this repository use?",
       "repo": "node-store",
       "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": true,
       "citations": [],
@@ -208,15 +572,15 @@
     },
     {
       "id": "node-orm",
+      "question": "Which ORM does the server use?",
       "repo": "node-store",
       "mode": "grounded",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": false,
       "citations": [
         "package.json",
         "package.json",
-        "src/index.js",
         "package.json",
         "package.json",
         "package.json",
@@ -228,9 +592,10 @@
     },
     {
       "id": "node-orm",
+      "question": "Which ORM does the server use?",
       "repo": "node-store",
       "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": true,
       "citations": [],
@@ -240,9 +605,10 @@
     },
     {
       "id": "node-ignore",
+      "question": "What does gitignore hide?",
       "repo": "node-store",
       "mode": "grounded",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": false,
       "citations": [
@@ -259,72 +625,10 @@
     },
     {
       "id": "node-ignore",
+      "question": "What does gitignore hide?",
       "repo": "node-store",
       "mode": "baseline",
-      "provider": "offline",
-      "answerable": true,
-      "refused": true,
-      "citations": [],
-      "citation_hit": false,
-      "abstention_correct": false,
-      "supported": false
-    },
-    {
-      "id": "node-server",
-      "repo": "node-store",
-      "mode": "grounded",
-      "provider": "offline",
-      "answerable": true,
-      "refused": false,
-      "citations": [
-        "package.json",
-        "src/index.js",
-        "package.json",
-        "package.json",
-        "package.json",
-        "package.json",
-        "package.json"
-      ],
-      "citation_hit": true,
-      "abstention_correct": true,
-      "supported": true
-    },
-    {
-      "id": "node-server",
-      "repo": "node-store",
-      "mode": "baseline",
-      "provider": "offline",
-      "answerable": true,
-      "refused": true,
-      "citations": [],
-      "citation_hit": false,
-      "abstention_correct": false,
-      "supported": false
-    },
-    {
-      "id": "node-deps",
-      "repo": "node-store",
-      "mode": "grounded",
-      "provider": "offline",
-      "answerable": true,
-      "refused": false,
-      "citations": [
-        "package.json",
-        "package.json",
-        "package.json",
-        "package.json",
-        "package.json",
-        "package.json"
-      ],
-      "citation_hit": true,
-      "abstention_correct": true,
-      "supported": true
-    },
-    {
-      "id": "node-deps",
-      "repo": "node-store",
-      "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": true,
       "citations": [],
@@ -334,9 +638,10 @@
     },
     {
       "id": "notes-about",
+      "question": "What is this repository about?",
       "repo": "notes-only",
       "mode": "grounded",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": false,
       "citations": [
@@ -349,9 +654,10 @@
     },
     {
       "id": "notes-about",
+      "question": "What is this repository about?",
       "repo": "notes-only",
       "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": true,
       "refused": true,
       "citations": [],
@@ -361,21 +667,26 @@
     },
     {
       "id": "notes-db",
+      "question": "What database does this repository use?",
       "repo": "notes-only",
       "mode": "grounded",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": false,
-      "refused": true,
-      "citations": [],
+      "refused": false,
+      "citations": [
+        "README.md",
+        "README.md"
+      ],
       "citation_hit": null,
-      "abstention_correct": true,
-      "supported": true
+      "abstention_correct": false,
+      "supported": false
     },
     {
       "id": "notes-db",
+      "question": "What database does this repository use?",
       "repo": "notes-only",
       "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": false,
       "refused": true,
       "citations": [],
@@ -385,21 +696,25 @@
     },
     {
       "id": "notes-ignore",
+      "question": "What does gitignore hide?",
       "repo": "notes-only",
       "mode": "grounded",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": false,
       "refused": true,
-      "citations": [],
+      "citations": [
+        "README.md"
+      ],
       "citation_hit": null,
       "abstention_correct": true,
       "supported": true
     },
     {
       "id": "notes-ignore",
+      "question": "What does gitignore hide?",
       "repo": "notes-only",
       "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": false,
       "refused": true,
       "citations": [],
@@ -409,45 +724,26 @@
     },
     {
       "id": "notes-backend",
+      "question": "How is the backend built?",
       "repo": "notes-only",
       "mode": "grounded",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": false,
-      "refused": true,
-      "citations": [],
+      "refused": false,
+      "citations": [
+        "README.md",
+        "README.md"
+      ],
       "citation_hit": null,
-      "abstention_correct": true,
-      "supported": true
+      "abstention_correct": false,
+      "supported": false
     },
     {
       "id": "notes-backend",
+      "question": "How is the backend built?",
       "repo": "notes-only",
       "mode": "baseline",
-      "provider": "offline",
-      "answerable": false,
-      "refused": true,
-      "citations": [],
-      "citation_hit": null,
-      "abstention_correct": true,
-      "supported": true
-    },
-    {
-      "id": "notes-orm",
-      "repo": "notes-only",
-      "mode": "grounded",
-      "provider": "offline",
-      "answerable": false,
-      "refused": true,
-      "citations": [],
-      "citation_hit": null,
-      "abstention_correct": true,
-      "supported": true
-    },
-    {
-      "id": "notes-orm",
-      "repo": "notes-only",
-      "mode": "baseline",
-      "provider": "offline",
+      "provider": "openai",
       "answerable": false,
       "refused": true,
       "citations": [],

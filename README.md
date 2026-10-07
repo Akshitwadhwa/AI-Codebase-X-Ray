@@ -72,11 +72,13 @@ The question dropdown always includes **Offline excerpts**. It also lists a clou
 
 Keys stay on the server.
 
-To score a name-only baseline against the scan-backed answer:
+To compare every model without RAG and with RAG on the 10 prompts in `eval/questions.json`:
 
 ```bash
-python -m eval.run_eval --provider offline
+python -m eval.run_eval
 ```
+
+The table is written to `eval/results.md`. Offline excerpts always run. GPT, Claude, Gemini, and Grok are measured when their keys are set.
 
 ## Configuration
 
