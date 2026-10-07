@@ -84,7 +84,7 @@ The HTTP API in `backend/gateway.py` is the only entry from the browser. One req
 - The scan stores capped excerpts of README, `.gitignore`, dependency manifests, and compose files on the same analysis JSON.
 - `POST /api/analyses/{id}/ask` packs that evidence and calls one provider: offline excerpts, GPT, Claude, Gemini, or Grok.
 - The page shows the answer and file citations. Compare sends the same question to a second provider.
-- `eval/run_eval.py` scores a name-only baseline against the grounded answer. The checked-in `eval/results.md` is the offline run.
+- `eval/run_eval.py` scores each model without RAG and with RAG on the same 15 prompts. The checked-in `eval/results.md` is that comparison.
 
 ## Later project phases
 

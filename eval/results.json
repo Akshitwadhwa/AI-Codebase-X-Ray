@@ -1,25 +1,149 @@
 {
-  "provider": "offline",
   "research_question": "Does grounding a repository question in the saved scan produce more supported answers than asking the same model with only the repository name?",
-  "summary": [
+  "prompts": 15,
+  "questions": [
     {
-      "mode": "baseline",
-      "questions": 15,
-      "citation_hit_rate": 0.0,
-      "abstention_accuracy": 0.267,
-      "supported_rate": 0.267
+      "id": "billing-db",
+      "repo": "billing-api",
+      "question": "What database does this repository use?",
+      "answerable": true
     },
     {
-      "mode": "grounded",
-      "questions": 15,
-      "citation_hit_rate": 1.0,
-      "abstention_accuracy": 1.0,
-      "supported_rate": 1.0
+      "id": "billing-backend",
+      "repo": "billing-api",
+      "question": "How is the backend built?",
+      "answerable": true
+    },
+    {
+      "id": "billing-ignore",
+      "repo": "billing-api",
+      "question": "What does the gitignore file hide?",
+      "answerable": true
+    },
+    {
+      "id": "billing-packages",
+      "repo": "billing-api",
+      "question": "Which Python packages are listed for the backend?",
+      "answerable": true
+    },
+    {
+      "id": "billing-entry",
+      "repo": "billing-api",
+      "question": "Where is the FastAPI app created?",
+      "answerable": true
+    },
+    {
+      "id": "node-db",
+      "repo": "node-store",
+      "question": "What database does this repository use?",
+      "answerable": true
+    },
+    {
+      "id": "node-orm",
+      "repo": "node-store",
+      "question": "Which ORM does the server use?",
+      "answerable": true
+    },
+    {
+      "id": "node-ignore",
+      "repo": "node-store",
+      "question": "What does gitignore hide?",
+      "answerable": true
+    },
+    {
+      "id": "node-server",
+      "repo": "node-store",
+      "question": "How is the backend server started?",
+      "answerable": true
+    },
+    {
+      "id": "node-deps",
+      "repo": "node-store",
+      "question": "Which packages does package.json depend on?",
+      "answerable": true
+    },
+    {
+      "id": "notes-about",
+      "repo": "notes-only",
+      "question": "What is this repository about?",
+      "answerable": true
+    },
+    {
+      "id": "notes-db",
+      "repo": "notes-only",
+      "question": "What database does this repository use?",
+      "answerable": false
+    },
+    {
+      "id": "notes-ignore",
+      "repo": "notes-only",
+      "question": "What does gitignore hide?",
+      "answerable": false
+    },
+    {
+      "id": "notes-backend",
+      "repo": "notes-only",
+      "question": "How is the backend built?",
+      "answerable": false
+    },
+    {
+      "id": "notes-orm",
+      "repo": "notes-only",
+      "question": "Which ORM does the server use?",
+      "answerable": false
+    }
+  ],
+  "providers": [
+    {
+      "id": "offline",
+      "label": "Offline excerpts",
+      "measured": true,
+      "summary": [
+        {
+          "mode": "baseline",
+          "questions": 15,
+          "citation_hit_rate": 0.0,
+          "abstention_accuracy": 0.267,
+          "supported_rate": 0.267
+        },
+        {
+          "mode": "grounded",
+          "questions": 15,
+          "citation_hit_rate": 1.0,
+          "abstention_accuracy": 1.0,
+          "supported_rate": 1.0
+        }
+      ]
+    },
+    {
+      "id": "openai",
+      "label": "GPT",
+      "measured": false,
+      "reason": "OPENAI_API_KEY"
+    },
+    {
+      "id": "anthropic",
+      "label": "Claude",
+      "measured": false,
+      "reason": "ANTHROPIC_API_KEY"
+    },
+    {
+      "id": "gemini",
+      "label": "Gemini",
+      "measured": false,
+      "reason": "GEMINI_API_KEY"
+    },
+    {
+      "id": "grok",
+      "label": "Grok",
+      "measured": false,
+      "reason": "XAI_API_KEY"
     }
   ],
   "rows": [
     {
       "id": "billing-db",
+      "question": "What database does this repository use?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -41,6 +165,7 @@
     },
     {
       "id": "billing-db",
+      "question": "What database does this repository use?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -53,6 +178,7 @@
     },
     {
       "id": "billing-backend",
+      "question": "How is the backend built?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -72,6 +198,7 @@
     },
     {
       "id": "billing-backend",
+      "question": "How is the backend built?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -84,6 +211,7 @@
     },
     {
       "id": "billing-ignore",
+      "question": "What does the gitignore file hide?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -103,6 +231,7 @@
     },
     {
       "id": "billing-ignore",
+      "question": "What does the gitignore file hide?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -115,6 +244,7 @@
     },
     {
       "id": "billing-packages",
+      "question": "Which Python packages are listed for the backend?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -134,6 +264,7 @@
     },
     {
       "id": "billing-packages",
+      "question": "Which Python packages are listed for the backend?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -146,6 +277,7 @@
     },
     {
       "id": "billing-entry",
+      "question": "Where is the FastAPI app created?",
       "repo": "billing-api",
       "mode": "grounded",
       "provider": "offline",
@@ -165,6 +297,7 @@
     },
     {
       "id": "billing-entry",
+      "question": "Where is the FastAPI app created?",
       "repo": "billing-api",
       "mode": "baseline",
       "provider": "offline",
@@ -177,6 +310,7 @@
     },
     {
       "id": "node-db",
+      "question": "What database does this repository use?",
       "repo": "node-store",
       "mode": "grounded",
       "provider": "offline",
@@ -196,6 +330,7 @@
     },
     {
       "id": "node-db",
+      "question": "What database does this repository use?",
       "repo": "node-store",
       "mode": "baseline",
       "provider": "offline",
@@ -208,6 +343,7 @@
     },
     {
       "id": "node-orm",
+      "question": "Which ORM does the server use?",
       "repo": "node-store",
       "mode": "grounded",
       "provider": "offline",
@@ -228,6 +364,7 @@
     },
     {
       "id": "node-orm",
+      "question": "Which ORM does the server use?",
       "repo": "node-store",
       "mode": "baseline",
       "provider": "offline",
@@ -240,6 +377,7 @@
     },
     {
       "id": "node-ignore",
+      "question": "What does gitignore hide?",
       "repo": "node-store",
       "mode": "grounded",
       "provider": "offline",
@@ -259,6 +397,7 @@
     },
     {
       "id": "node-ignore",
+      "question": "What does gitignore hide?",
       "repo": "node-store",
       "mode": "baseline",
       "provider": "offline",
@@ -271,6 +410,7 @@
     },
     {
       "id": "node-server",
+      "question": "How is the backend server started?",
       "repo": "node-store",
       "mode": "grounded",
       "provider": "offline",
@@ -291,6 +431,7 @@
     },
     {
       "id": "node-server",
+      "question": "How is the backend server started?",
       "repo": "node-store",
       "mode": "baseline",
       "provider": "offline",
@@ -303,6 +444,7 @@
     },
     {
       "id": "node-deps",
+      "question": "Which packages does package.json depend on?",
       "repo": "node-store",
       "mode": "grounded",
       "provider": "offline",
@@ -322,6 +464,7 @@
     },
     {
       "id": "node-deps",
+      "question": "Which packages does package.json depend on?",
       "repo": "node-store",
       "mode": "baseline",
       "provider": "offline",
@@ -334,6 +477,7 @@
     },
     {
       "id": "notes-about",
+      "question": "What is this repository about?",
       "repo": "notes-only",
       "mode": "grounded",
       "provider": "offline",
@@ -349,6 +493,7 @@
     },
     {
       "id": "notes-about",
+      "question": "What is this repository about?",
       "repo": "notes-only",
       "mode": "baseline",
       "provider": "offline",
@@ -361,6 +506,7 @@
     },
     {
       "id": "notes-db",
+      "question": "What database does this repository use?",
       "repo": "notes-only",
       "mode": "grounded",
       "provider": "offline",
@@ -373,6 +519,7 @@
     },
     {
       "id": "notes-db",
+      "question": "What database does this repository use?",
       "repo": "notes-only",
       "mode": "baseline",
       "provider": "offline",
@@ -385,6 +532,7 @@
     },
     {
       "id": "notes-ignore",
+      "question": "What does gitignore hide?",
       "repo": "notes-only",
       "mode": "grounded",
       "provider": "offline",
@@ -397,6 +545,7 @@
     },
     {
       "id": "notes-ignore",
+      "question": "What does gitignore hide?",
       "repo": "notes-only",
       "mode": "baseline",
       "provider": "offline",
@@ -409,6 +558,7 @@
     },
     {
       "id": "notes-backend",
+      "question": "How is the backend built?",
       "repo": "notes-only",
       "mode": "grounded",
       "provider": "offline",
@@ -421,6 +571,7 @@
     },
     {
       "id": "notes-backend",
+      "question": "How is the backend built?",
       "repo": "notes-only",
       "mode": "baseline",
       "provider": "offline",
@@ -433,6 +584,7 @@
     },
     {
       "id": "notes-orm",
+      "question": "Which ORM does the server use?",
       "repo": "notes-only",
       "mode": "grounded",
       "provider": "offline",
@@ -445,6 +597,7 @@
     },
     {
       "id": "notes-orm",
+      "question": "Which ORM does the server use?",
       "repo": "notes-only",
       "mode": "baseline",
       "provider": "offline",
