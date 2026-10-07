@@ -72,7 +72,7 @@ The question dropdown always includes **Offline excerpts**. It also lists a clou
 
 Keys stay on the server.
 
-To compare every model without RAG and with RAG on the 15 prompts in `eval/questions.json`:
+To compare every model without RAG and with RAG on the 10 prompts in `eval/questions.json`:
 
 ```bash
 python -m eval.run_eval

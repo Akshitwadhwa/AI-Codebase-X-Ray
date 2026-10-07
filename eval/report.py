@@ -17,6 +17,9 @@ def render(report: dict) -> str:
         "|---|---|---:|---:|---:|---:|",
     ]
     for provider in report["providers"]:
+        if provider.get("error"):
+            lines.append(f"| {provider['label']} | Call failed | — | — | — | — |")
+            continue
         if not provider["measured"]:
             lines.append(f"| {provider['label']} | Not measured | — | — | — | — |")
             continue
@@ -24,10 +27,18 @@ def render(report: dict) -> str:
             lines.append(
                 f"| {provider['label']} | {MODE_LABELS[item['mode']]} | {item['questions']} | {item['citation_hit_rate']:.3f} | {item['abstention_accuracy']:.3f} | {item['supported_rate']:.3f} |"
             )
-    skipped = [provider for provider in report["providers"] if not provider["measured"]]
+    skipped = [provider for provider in report["providers"] if not provider["measured"] and not provider.get("error")]
+    failed = [provider for provider in report["providers"] if provider.get("error")]
+    notes = []
     if skipped:
         reasons = "; ".join(f"{provider['label']} needs `{provider['reason']}`" for provider in skipped)
-        lines.extend(["", f"Not measured in this run: {reasons}."])
+        notes.append(f"Not measured in this run: {reasons}.")
+    if failed:
+        reasons = "; ".join(f"{provider['label']}: {provider['error']}" for provider in failed)
+        notes.append(f"Call failed in this run: {reasons}.")
+    if notes:
+        lines.append("")
+        lines.append("\n\n".join(notes))
     measured = [provider for provider in report["providers"] if provider["measured"]]
     if measured:
         lines.extend(["", "## Each prompt", ""])

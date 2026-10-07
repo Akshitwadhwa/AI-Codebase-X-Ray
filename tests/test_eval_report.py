@@ -17,6 +17,7 @@ def test_comparison_table_lists_measured_and_skipped_models() -> None:
                 ],
             },
             {"id": "openai", "label": "GPT", "measured": False, "reason": "OPENAI_API_KEY"},
+            {"id": "gemini", "label": "Gemini", "measured": False, "error": "HTTP 429, free-tier daily quota for gemini-3.8-flash"},
         ],
         "rows": [
             {"provider": "offline", "id": "q1", "mode": "baseline", "supported": False},
@@ -28,4 +29,6 @@ def test_comparison_table_lists_measured_and_skipped_models() -> None:
     assert "| Offline excerpts | With RAG | 1 | 1.000 | 1.000 | 1.000 |" in text
     assert "| GPT | Not measured | — | — | — | — |" in text
     assert "GPT needs `OPENAI_API_KEY`" in text
+    assert "| Gemini | Call failed | — | — | — | — |" in text
+    assert "Gemini: HTTP 429, free-tier daily quota for gemini-3.8-flash" in text
     assert "| What database does this repository use? | billing-api | yes | no | yes |" in text
