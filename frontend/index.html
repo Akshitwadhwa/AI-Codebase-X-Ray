@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Codebase X-Ray</title>
-    <link rel="stylesheet" href="/styles.css?v=7" />
+    <link rel="stylesheet" href="/styles.css?v=8" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reactflow@11.11.4/dist/style.css" />
   </head>
   <body>
@@ -12,14 +12,17 @@
       <header class="hero">
         <div class="eyebrow"><span class="pulse"></span> PHASE 2 · IMPACT REVIEW</div>
         <h1>See inside any codebase.</h1>
-        <p>Paste a public GitHub repository, or open a saved analysis. X-Ray maps the structure, then shows the file, class, callers, imports, tests, and files to review for a symbol you select.</p>
+        <p>Paste a public GitHub repository, or choose a project that is already saved. X-Ray maps the structure, then shows the file, class, callers, imports, tests, and files to review for a symbol you select.</p>
         <form id="analyze-form" class="searchbar">
           <input id="repository-url" type="url" required placeholder="https://github.com/owner/repository" value="https://github.com/psf/requests" />
           <button id="analyze-button" type="submit">Analyze repository <span>→</span></button>
         </form>
         <form id="open-form" class="searchbar open-form">
-          <input id="open-id" placeholder="Saved analysis id" maxlength="12" spellcheck="false" />
-          <button class="ghost" type="submit">Open saved analysis</button>
+          <select id="saved-analyses" aria-label="Saved projects">
+            <option value="">Loading saved projects…</option>
+          </select>
+          <input id="open-id" placeholder="Or paste an analysis id" maxlength="12" spellcheck="false" />
+          <button class="ghost" type="submit">Open</button>
         </form>
         <p id="status" class="status" role="status">Ready for a repository URL.</p>
       </header>
@@ -111,6 +114,6 @@
       </section>
     </main>
     <script type="module" src="/graph.js?v=5"></script>
-    <script src="/app.js?v=8"></script>
+    <script src="/app.js?v=9"></script>
   </body>
 </html>
