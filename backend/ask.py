@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from .graph import suggested_test_path
 from .models import AnalysisResult, AskResponse, Citation, ModelAnswer
 from .providers import ProviderError, complete
 
@@ -387,12 +388,62 @@ def answer_baseline(result: AnalysisResult, question: str, provider: str) -> Mod
     return complete(provider, pack_context(result, question, baseline=True), "baseline")
 
 
+def _pytest_command(test_path: str) -> str:
+    return f"python -m pytest {test_path}"
+
+
+def _with_pytest(action: str, paths: list[str]) -> str:
+    python_paths = [path for path in paths if path.endswith(".py")]
+    if not python_paths:
+        return action
+    return f"{action} and run {_pytest_command(' '.join(python_paths))}"
+
+
+def test_guidance(report) -> str:
+    """Test files, conventional path, and pytest command taken only from the impact graph."""
+    symbol = report.symbol
+    name = symbol.name
+    suggested = suggested_test_path(symbol.file_path or "")
+    covered: list[str] = []
+    existing: list[str] = []
+    seen: set[str] = set()
+    for item in report.tests:
+        path = item.file_path
+        if not path or path in seen:
+            continue
+        seen.add(path)
+        existing.append(path)
+        covered.append(f"{path} ({item.reason})")
+    if covered:
+        coverage = f"Tests already covering {name}: {'; '.join(covered)}."
+    else:
+        coverage = f"Tests already covering {name}: none."
+    if not suggested:
+        return f"{coverage} The graph has no source file, so it cannot suggest a new test path or a pytest command."
+    if not existing:
+        setup = _with_pytest(f"create {suggested}", [suggested])
+    else:
+        extend = _with_pytest(f"extend {' and '.join(existing)}", existing)
+        if suggested in existing:
+            setup = extend
+        else:
+            setup = f"{extend}, or {_with_pytest(f'create {suggested}', [suggested])}"
+    return "\n".join(
+        [
+            coverage,
+            f"A new test should live in {suggested}.",
+            f"To set up and run a test for this feature, {setup}.",
+        ]
+    )
+
+
 def symbol_prompt(report) -> str:
     symbol = report.symbol
     lines = [
         f"Repository: {report.symbol.file_path}",
-        "Question: What does this function do, and which files call it?",
-        "Write two paragraphs of plain prose. The first explains what the saved code does. The second names each caller and its file. Use only the evidence below. Do not invent callers.",
+        "Question: What does this function do, which files call it, and which tests cover it?",
+        "Write plain prose from the evidence. Explain what the saved code does, then name each caller and its file. "
+        "End with the test paragraph below, copied exactly. Use only the evidence below. Do not invent callers or a test path.",
         f"[{symbol.file_path}:{symbol.start_line}] {symbol.kind} {symbol.parent + '.' if symbol.parent else ''}{symbol.name}",
     ]
     if symbol.snippet:
@@ -406,32 +457,71 @@ def symbol_prompt(report) -> str:
             lines.append(f"[{item.file_path}:{item.line or 1}] {item.name} calls {symbol.name}")
     else:
         lines.append("Callers: none resolved")
+    lines.append("Test evidence from the graph. Use only these test files and this suggested path. Do not invent a test path.")
+    lines.append(test_guidance(report))
+    seen_tests: set[str] = set()
+    for item in report.tests:
+        if not item.file_path or item.file_path in seen_tests:
+            continue
+        seen_tests.add(item.file_path)
+        lines.append(f"[{item.file_path}:{item.line or 1}] {item.file_path} linked because {item.reason}")
+    suggested = suggested_test_path(symbol.file_path or "")
+    if suggested:
+        lines.append(f"Suggested test path: {suggested}")
+    if suggested.endswith(".py"):
+        lines.append(f"Pytest command: {_pytest_command(suggested)}")
     return "\n".join(lines)
 
 
-def explain_symbol(report, provider: str) -> ModelAnswer:
+def _offline_symbol(report) -> ModelAnswer:
     symbol = report.symbol
+    direct = [item for item in report.callers if item.depth == 1 and item.file_path]
+    if direct:
+        called = " ".join(f"{item.name} in {item.file_path} calls it{f' at line {item.line}' if item.line else ''}." for item in direct)
+        caller_sentence = f"The graph resolves these callers. {called} A change to {symbol.name} should be checked against each of those files."
+    else:
+        caller_sentence = f"No resolved caller was found in the graph, so the scan cannot name another file that invokes {symbol.name}."
+    place = f"inside {symbol.parent}, " if symbol.parent else ""
+    snippet = ""
+    if symbol.snippet:
+        snippet = f" The saved code, starting at line {symbol.start_line}, is: {symbol.snippet.strip()} That snippet is the evidence for what the function does."
+    citations = [Citation(path=symbol.file_path, line=symbol.start_line)] if symbol.file_path else []
+    citations.extend(Citation(path=item.file_path, line=item.line) for item in direct if item.file_path)
+    return ModelAnswer(
+        answer=(
+            f"{symbol.name} is a {symbol.kind} {place}in {symbol.file_path}.{snippet}\n\n{caller_sentence}"
+        ),
+        citations=citations,
+        provider="offline",
+        refused=False,
+        mode="grounded",
+    )
+
+
+def _attach_test_guidance(answer: ModelAnswer, report) -> ModelAnswer:
+    guidance = test_guidance(report)
+    text = answer.answer.strip()
+    if guidance not in text:
+        text = f"{text}\n\n{guidance}" if text else guidance
+    citations = list(answer.citations)
+    cited = {item.path for item in citations}
+    for item in report.tests:
+        if item.file_path and item.file_path not in cited:
+            citations.append(Citation(path=item.file_path, line=item.line))
+            cited.add(item.file_path)
+    return ModelAnswer(
+        answer=text,
+        citations=citations,
+        provider=answer.provider,
+        refused=answer.refused,
+        mode=answer.mode,
+    )
+
+
+def explain_symbol(report, provider: str) -> ModelAnswer:
+    prompt = symbol_prompt(report)
     if provider == "offline":
-        direct = [item for item in report.callers if item.depth == 1 and item.file_path]
-        if direct:
-            called = " ".join(f"{item.name} in {item.file_path} calls it{f' at line {item.line}' if item.line else ''}." for item in direct)
-            caller_sentence = f"The graph resolves these callers. {called} A change to {symbol.name} should be checked against each of those files."
-        else:
-            caller_sentence = f"No resolved caller was found in the graph, so the scan cannot name another file that invokes {symbol.name}."
-        place = f"inside {symbol.parent}, " if symbol.parent else ""
-        snippet = ""
-        if symbol.snippet:
-            snippet = f" The saved code, starting at line {symbol.start_line}, is: {symbol.snippet.strip()} That snippet is the evidence for what the function does."
-        citations = [Citation(path=symbol.file_path, line=symbol.start_line)] if symbol.file_path else []
-        citations.extend(Citation(path=item.file_path, line=item.line) for item in direct if item.file_path)
-        answer = ModelAnswer(
-            answer=(
-                f"{symbol.name} is a {symbol.kind} {place}in {symbol.file_path}.{snippet}\n\n{caller_sentence}"
-            ),
-            citations=citations,
-            provider="offline",
-            refused=False,
-            mode="grounded",
-        )
-        return lengthen_grounded(answer, symbol_prompt(report))
-    return lengthen_grounded(complete(provider, symbol_prompt(report), "grounded"), symbol_prompt(report))
+        answer = _offline_symbol(report)
+    else:
+        answer = complete(provider, prompt, "grounded")
+    return _attach_test_guidance(answer, report)

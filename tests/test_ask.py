@@ -127,28 +127,94 @@ def test_offline_refuses_when_the_scan_has_no_database(tmp_path: Path) -> None:
     assert score_answer(answer.model_dump(), {"answerable": False, "paths": []})["abstention_correct"] is True
 
 
-def test_rag_explains_a_selected_function_and_its_caller(tmp_path: Path) -> None:
-    (tmp_path / "billing").mkdir()
-    (tmp_path / "billing" / "service.py").write_text(
+def _billing_tree(root: Path, *, with_test: bool) -> None:
+    (root / "billing").mkdir()
+    (root / "billing" / "service.py").write_text(
         "class BillingService:\n    def process_payment(self, amount):\n        return amount\n",
         encoding="utf-8",
     )
-    (tmp_path / "billing" / "api.py").write_text(
+    (root / "billing" / "api.py").write_text(
         "from billing.service import BillingService\n\ndef checkout(service):\n    return service.process_payment(10)\n",
         encoding="utf-8",
     )
+    if with_test:
+        (root / "tests").mkdir()
+        (root / "tests" / "test_billing.py").write_text(
+            "from billing.service import BillingService\n\ndef test_checkout():\n    return BillingService\n",
+            encoding="utf-8",
+        )
+
+
+def _payment_report(tmp_path: Path, *, with_test: bool):
+    _billing_tree(tmp_path, with_test=with_test)
     result = analyze_source(tmp_path, "demo/billing", "main")
-    from backend.ask import explain_symbol
     from backend.graph import build_graph, impact_report
 
     focus = next(item for item in result.symbols if item.name == "process_payment")
     report = impact_report(build_graph(result), focus.symbol_id, 1)
+    assert report is not None
+    return report
+
+
+def test_rag_explains_a_selected_function_and_its_caller(tmp_path: Path) -> None:
+    from backend.ask import explain_symbol
+
+    report = _payment_report(tmp_path, with_test=False)
     answer = explain_symbol(report, "offline")
     assert "process_payment" in answer.answer
     assert "billing/service.py" in answer.answer
     assert "billing/api.py" in answer.answer
     assert "checkout" in answer.answer
+    assert "Tests already covering process_payment: none." in answer.answer
+    assert "A new test should live in tests/billing/test_service.py." in answer.answer
+    assert "python -m pytest tests/billing/test_service.py" in answer.answer
     assert any(item.path == "billing/api.py" for item in answer.citations)
+
+
+def test_offline_symbol_reply_lists_graph_tests_and_pytest(tmp_path: Path, monkeypatch) -> None:
+    def fail_if_called(*_args, **_kwargs):
+        raise AssertionError("offline symbol review must not call a model")
+
+    monkeypatch.setattr("backend.ask.complete", fail_if_called)
+    from backend.ask import explain_symbol
+
+    report = _payment_report(tmp_path, with_test=True)
+    answer = explain_symbol(report, "offline")
+    assert "tests/test_billing.py (imports module)" in answer.answer
+    assert "A new test should live in tests/billing/test_service.py." in answer.answer
+    assert "extend tests/test_billing.py and run python -m pytest tests/test_billing.py" in answer.answer
+    assert "create tests/billing/test_service.py and run python -m pytest tests/billing/test_service.py" in answer.answer
+    assert any(item.path == "tests/test_billing.py" for item in answer.citations)
+
+
+def test_model_symbol_prompt_receives_graph_test_paths(tmp_path: Path, monkeypatch) -> None:
+    from backend.models import ModelAnswer
+
+    captured: dict[str, str] = {}
+
+    def fake_complete(provider: str, prompt: str, mode: str) -> ModelAnswer:
+        captured["provider"] = provider
+        captured["prompt"] = prompt
+        captured["mode"] = mode
+        return ModelAnswer(answer="process_payment charges the amount.", provider=provider, refused=False, mode=mode)
+
+    monkeypatch.setattr("backend.ask.complete", fake_complete)
+    from backend.ask import explain_symbol
+
+    report = _payment_report(tmp_path, with_test=True)
+    answer = explain_symbol(report, "openai")
+    prompt = captured["prompt"]
+    assert captured["provider"] == "openai"
+    assert captured["mode"] == "grounded"
+    assert "tests/test_billing.py (imports module)" in prompt
+    assert "tests/test_billing.py linked because imports module" in prompt
+    assert "Suggested test path: tests/billing/test_service.py" in prompt
+    assert "Pytest command: python -m pytest tests/billing/test_service.py" in prompt
+    assert "Do not invent a test path." in prompt
+    assert "tests/test_billing.py (imports module)" in answer.answer
+    assert "tests/billing/test_service.py" in answer.answer
+    assert "python -m pytest tests/test_billing.py" in answer.answer
+    assert "python -m pytest tests/billing/test_service.py" in answer.answer
 
 
 def test_vector_retrieval_stores_embeddings_and_finds_sqlite(tmp_path: Path) -> None:

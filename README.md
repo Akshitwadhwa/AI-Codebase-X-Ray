@@ -43,6 +43,8 @@ The scan keeps short excerpts of the README, `.gitignore`, dependency files, and
 
 Search a name. After a scan, the page tries `process_payment` when that symbol exists. The review shows the containing file and line range, a snippet, callers, callees, base classes, imports, tests, risk flags, files to review, and unresolved calls. **Include callers of callers** widens the neighborhood.
 
+The symbol reply also lists tests the graph already links (file and reason), the conventional path for a new test of that source file, and the pytest command for the file to create or extend. Offline excerpts build that paragraph from the graph. GPT, Claude, Gemini, and Grok receive the same test files and suggested path in the prompt.
+
 The neighborhood map shows the selected symbol, callers, callees, class, tests, and imports. **Import map** is the architecture view. Opening a review file shows its symbols, imports, importers, and tests.
 
 ### Run pytest on a pull request

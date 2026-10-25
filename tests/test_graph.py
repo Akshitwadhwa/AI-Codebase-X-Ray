@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from backend.analyzer import analyze_source
-from backend.graph import build_graph, impact_report, neighborhood_view, to_networkx
+from backend.graph import build_graph, impact_report, neighborhood_view, suggested_test_path, to_networkx
 from backend.main import app
 from backend.models import AnalysisResult, ImportRecord, Relationship, Symbol
 from backend.store import InvalidFilePath, NetworkXGraphStore, safe_relative_path
@@ -49,6 +49,13 @@ def _focus(result):
     matches = [item for item in result.symbols if item.name == "process_payment" and item.parent == "BillingService"]
     assert len(matches) == 1
     return matches[0]
+
+
+def test_suggested_test_path_follows_the_source_file() -> None:
+    assert suggested_test_path("billing/service.py") == "tests/billing/test_service.py"
+    assert suggested_test_path("service.py") == "tests/test_service.py"
+    assert suggested_test_path("src/index.js") == "tests/src/index.test.js"
+    assert suggested_test_path("tests/test_billing.py") == "tests/test_billing.py"
 
 
 def test_process_payment_impact_lists_review_evidence(tmp_path: Path) -> None:

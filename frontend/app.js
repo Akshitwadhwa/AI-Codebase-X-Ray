@@ -253,7 +253,7 @@ async function explainSymbol(symbolId) {
     const citations = answer.citations.length
       ? answer.citations.map((item) => `<div class="evidence">${escapeHtml(item.path)}${item.line ? `:${item.line}` : ''}</div>`).join('')
       : '<p class="reason">No file citation.</p>';
-    panel.innerHTML = `<div class="stack"><h4>RAG · ${escapeHtml(answer.provider)}</h4><p>${escapeHtml(answer.answer)}</p><h4>Citations</h4>${citations}</div>`;
+    panel.innerHTML = `<div class="stack"><h4>RAG · ${escapeHtml(answer.provider)}</h4><p class="symbol-reply">${escapeHtml(answer.answer)}</p><h4>Citations</h4>${citations}</div>`;
   } catch (error) {
     if (selectedSymbolId === symbolId) panel.innerHTML = `<p class="reason">${escapeHtml(error.message)}</p>`;
   }
