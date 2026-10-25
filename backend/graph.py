@@ -175,6 +175,28 @@ def _conventional_test(test_path: str, source_path: str) -> bool:
     }
 
 
+def suggested_test_path(source_path: str) -> str:
+    """Canonical new-test path for a source file, using the same names as `_conventional_test`."""
+    normalized = source_path.replace("\\", "/").lstrip("./")
+    if not normalized:
+        return ""
+    if is_test_path(normalized):
+        return normalized
+    path = Path(normalized)
+    suffix = path.suffix.lower()
+    stem = path.stem
+    if suffix in {".js", ".jsx", ".ts", ".tsx"}:
+        filename = f"{stem}.test{suffix}"
+    elif suffix in {"", ".py"}:
+        filename = f"test_{stem}.py"
+    else:
+        filename = f"test_{stem}{suffix}"
+    parent = path.parent.as_posix()
+    if parent in {"", "."}:
+        return f"tests/{filename}"
+    return f"tests/{parent}/{filename}"
+
+
 def build_graph(result: AnalysisResult) -> GraphDocument:
     assign_symbol_ids(result.symbols)
     nodes: list[GraphNode] = []
