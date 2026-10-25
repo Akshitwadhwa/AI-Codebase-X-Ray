@@ -31,7 +31,7 @@ The page shows the repository name, a saved 12-character analysis id, the primar
 
 ### Reopen a scan
 
-Paste that 12-character id and choose **Open saved analysis**.
+Choose the project in **Saved projects**, or paste that 12-character id and choose **Open**.
 
 ### Ask a question
 

@@ -172,6 +172,7 @@ def test_impact_api_reloads_saved_analysis(tmp_path: Path, monkeypatch) -> None:
     listing = client.get("/api/analyses")
     assert listing.status_code == 200
     assert listing.json()[0]["analysis_id"] == "abc123abc123"
+    assert listing.json()[0]["repository"] == "demo/billing"
     missing = client.get("/api/analyses/not-an-id")
     assert missing.status_code == 400
     impact = client.get(f"/api/analyses/abc123abc123/impact/{focus}")

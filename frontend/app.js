@@ -40,7 +40,10 @@ function render(data) {
   document.querySelector('#relationship-list').innerHTML = data.relationships.map((item) => `<div class="relationship"><span class="relationship-kind">${escapeHtml(item.kind)}</span><span>${escapeHtml(item.source)}</span><span>→</span><span class="relationship-target">${escapeHtml(item.target)}</span></div>`).join('') || '<p>No relationships detected.</p>';
   document.querySelector('#warnings').textContent = data.warnings.length ? `Warnings: ${data.warnings.join(' ')}` : '';
   results.classList.remove('hidden');
-  if (data.analysis_id) prepareImpact(data.analysis_id);
+  if (data.analysis_id) {
+    prepareImpact(data.analysis_id);
+    loadSavedAnalyses(data.analysis_id);
+  }
 }
 
 const impact = document.querySelector('#impact');
@@ -53,22 +56,58 @@ const openId = document.querySelector('#open-id');
 let currentAnalysisId = '';
 let selectedSymbolId = '';
 
+const savedAnalyses = document.querySelector('#saved-analyses');
+
+function savedLabel(item) {
+  const language = item.primary_language || 'unknown language';
+  return `${item.repository} · ${language} · ${item.files} files · ${item.analysis_id}`;
+}
+
+async function loadSavedAnalyses(selectedId) {
+  try {
+    const response = await fetch('/api/analyses');
+    const items = await response.json();
+    if (!response.ok) throw new Error(items.detail || 'Could not list saved projects');
+    const options = [`<option value="">${items.length ? 'Choose a saved project' : 'No saved projects yet'}</option>`];
+    items.forEach((item) => {
+      options.push(`<option value="${escapeHtml(item.analysis_id)}">${escapeHtml(savedLabel(item))}</option>`);
+    });
+    savedAnalyses.innerHTML = options.join('');
+    if (selectedId) savedAnalyses.value = selectedId;
+  } catch (error) {
+    savedAnalyses.innerHTML = '<option value="">Saved projects unavailable</option>';
+  }
+}
+
+savedAnalyses.addEventListener('change', () => {
+  if (!savedAnalyses.value) return;
+  openId.value = savedAnalyses.value;
+  openForm.requestSubmit();
+});
+
 openForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const id = openId.value.trim().toLowerCase();
+  const id = (openId.value || savedAnalyses.value).trim().toLowerCase();
   status.classList.remove('error');
+  if (!id) {
+    status.textContent = 'Choose a saved project, or paste its analysis id.';
+    status.classList.add('error');
+    return;
+  }
   status.textContent = 'Loading saved analysis…';
   try {
     const response = await fetch(`/api/analyses/${encodeURIComponent(id)}`);
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.detail || 'Analysis was not found');
     render(payload);
-    status.textContent = `Opened saved analysis ${id}.`;
+    status.textContent = `Opened ${payload.repository} from ${id}.json.`;
   } catch (error) {
     status.textContent = error.message;
     status.classList.add('error');
   }
 });
+
+loadSavedAnalyses();
 
 function prepareImpact(analysisId) {
   currentAnalysisId = analysisId;

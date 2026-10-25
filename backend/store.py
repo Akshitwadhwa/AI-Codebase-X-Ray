@@ -80,7 +80,7 @@ class NetworkXGraphStore:
         self.save_graph(document)
         return document
 
-    def list_analyses(self, limit: int = 20) -> list[AnalysisIndexEntry]:
+    def list_analyses(self, limit: int = 50) -> list[AnalysisIndexEntry]:
         if not self.directory.is_dir():
             return []
         files = [path for path in self.directory.glob("*.json") if not path.name.endswith(".graph.json")]
